@@ -35,7 +35,15 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  await admin.from('profiles').update({ organization_id }).eq('id', data.user.id)
+  // upsert garante que o perfil existe mesmo que o trigger ainda não tenha corrido
+  const { error: profileError } = await admin.from('profiles').upsert({
+    id: data.user.id,
+    full_name,
+    role: 'worker',
+    organization_id,
+  })
+
+  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 })
 
   return NextResponse.json({ ok: true })
 }
