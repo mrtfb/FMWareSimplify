@@ -82,10 +82,13 @@ export function JobReportForm({ jobId, jobTitle, userId, reportType, existingRep
       const blob = await fetch(dataUrl).then(r => r.blob())
       const path = `signatures/${jobId}/${reportType}_${Date.now()}.png`
       const { error: sigError } = await supabase.storage.from('reports').upload(path, blob, { contentType: 'image/png' })
-      if (!sigError) {
-        const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
-        signatureUrl = publicUrl
+      if (sigError) {
+        setError(`Erro ao guardar assinatura: ${sigError.message}`)
+        setLoading(false)
+        return
       }
+      const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
+      signatureUrl = publicUrl
     }
 
     const payload = {
@@ -132,10 +135,13 @@ export function JobReportForm({ jobId, jobTitle, userId, reportType, existingRep
       const ext = photo.name.split('.').pop()
       const path = `job-reports/${reportId}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage.from('reports').upload(path, photo)
-      if (!uploadError) {
-        const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
-        await supabase.from('media').insert({ job_report_id: reportId, storage_path: path, public_url: publicUrl })
+      if (uploadError) {
+        setError(`Erro ao guardar foto: ${uploadError.message}`)
+        setLoading(false)
+        return
       }
+      const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
+      await supabase.from('media').insert({ job_report_id: reportId, storage_path: path, public_url: publicUrl })
     }
 
     router.push(`/worker/jobs/${jobId}`)

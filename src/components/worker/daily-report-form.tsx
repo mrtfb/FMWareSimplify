@@ -76,10 +76,13 @@ export function DailyReportForm({ jobId, jobTitle, userId }: DailyReportFormProp
       const ext = photo.name.split('.').pop()
       const path = `daily/${report.id}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage.from('reports').upload(path, photo)
-      if (!uploadError) {
-        const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
-        await supabase.from('media').insert({ daily_report_id: report.id, storage_path: path, public_url: publicUrl })
+      if (uploadError) {
+        setError(`Erro ao guardar foto: ${uploadError.message}`)
+        setLoading(false)
+        return
       }
+      const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
+      await supabase.from('media').insert({ daily_report_id: report.id, storage_path: path, public_url: publicUrl })
     }
 
     router.push(`/worker/jobs/${jobId}`)
