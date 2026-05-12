@@ -14,9 +14,18 @@ interface DailyReportFormProps {
   jobId: string
   jobTitle: string
   userId: string
+  existingReport?: {
+    id: string
+    report_date: string
+    description: string | null
+    hours_worked: number | null
+    materials_used: string | null
+    observations: string | null
+    media?: { public_url: string }[]
+  } | null
 }
 
-const today = new Date().toISOString().split('T')[0]
+const todayStr = new Date().toISOString().split('T')[0]
 
 function calcHours(start: string, end: string): string {
   if (!start || !end) return ''
@@ -27,19 +36,19 @@ function calcHours(start: string, end: string): string {
   return (mins / 60).toFixed(2).replace(/\.?0+$/, '')
 }
 
-export function DailyReportForm({ jobId, jobTitle, userId }: DailyReportFormProps) {
+export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: DailyReportFormProps) {
   const router = useRouter()
   const supabase = createClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
-    report_date: today,
-    description: '',
+    report_date: existingReport?.report_date ?? todayStr,
+    description: existingReport?.description ?? '',
     time_start: '',
     time_end: '',
-    hours_worked: '',
-    materials_used: '',
-    observations: '',
+    hours_worked: existingReport?.hours_worked?.toString() ?? '',
+    materials_used: existingReport?.materials_used ?? '',
+    observations: existingReport?.observations ?? '',
   })
   const [photos, setPhotos] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
@@ -77,25 +86,38 @@ export function DailyReportForm({ jobId, jobTitle, userId }: DailyReportFormProp
     setLoading(true)
     setError('')
 
-    const { data: report, error: reportError } = await supabase
-      .from('daily_reports')
-      .insert({
-        job_id: jobId,
-        worker_id: userId,
-        report_date: form.report_date,
-        description: form.description,
-        hours_worked: form.hours_worked ? parseFloat(form.hours_worked) : null,
-        materials_used: form.materials_used || null,
-        observations: form.observations || null,
-      })
-      .select()
-      .single()
+    const payload = {
+      job_id: jobId,
+      worker_id: userId,
+      report_date: form.report_date,
+      description: form.description,
+      hours_worked: form.hours_worked ? parseFloat(form.hours_worked) : null,
+      materials_used: form.materials_used || null,
+      observations: form.observations || null,
+    }
 
-    if (reportError) { setError('Erro ao guardar ficha'); setLoading(false); return }
+    let reportId: string
+
+    if (existingReport) {
+      const { error: updateError } = await supabase
+        .from('daily_reports')
+        .update(payload)
+        .eq('id', existingReport.id)
+      if (updateError) { setError('Erro ao guardar ficha'); setLoading(false); return }
+      reportId = existingReport.id
+    } else {
+      const { data: report, error: reportError } = await supabase
+        .from('daily_reports')
+        .insert(payload)
+        .select()
+        .single()
+      if (reportError) { setError('Erro ao guardar ficha'); setLoading(false); return }
+      reportId = report.id
+    }
 
     for (const photo of photos) {
       const ext = photo.name.split('.').pop()
-      const path = `daily/${report.id}/${Date.now()}.${ext}`
+      const path = `daily/${reportId}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage.from('reports').upload(path, photo)
       if (uploadError) {
         setError(`Erro ao guardar foto: ${uploadError.message}`)
@@ -103,7 +125,7 @@ export function DailyReportForm({ jobId, jobTitle, userId }: DailyReportFormProp
         return
       }
       const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
-      await supabase.from('media').insert({ daily_report_id: report.id, storage_path: path, public_url: publicUrl })
+      await supabase.from('media').insert({ daily_report_id: reportId, storage_path: path, public_url: publicUrl })
     }
 
     router.push(`/worker/jobs/${jobId}`)
@@ -120,7 +142,7 @@ export function DailyReportForm({ jobId, jobTitle, userId }: DailyReportFormProp
       </div>
 
       <div>
-        <h1 className="text-xl font-bold">Nova Ficha Diária</h1>
+        <h1 className="text-xl font-bold">{existingReport ? 'Editar Ficha Diária' : 'Nova Ficha Diária'}</h1>
         <p className="text-sm text-gray-500">{jobTitle}</p>
       </div>
 
@@ -130,7 +152,7 @@ export function DailyReportForm({ jobId, jobTitle, userId }: DailyReportFormProp
           <Input
             type="date"
             value={form.report_date}
-            max={today}
+            max={todayStr}
             onChange={e => setForm(f => ({ ...f, report_date: e.target.value }))}
           />
         </div>
@@ -146,25 +168,16 @@ export function DailyReportForm({ jobId, jobTitle, userId }: DailyReportFormProp
           />
         </div>
 
-        {/* Horário */}
         <div className="space-y-2 p-3 bg-gray-50 rounded-xl border">
           <p className="text-sm font-medium text-gray-700">Horário</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Hora de chegada</Label>
-              <Input
-                type="time"
-                value={form.time_start}
-                onChange={e => handleTimeChange('time_start', e.target.value)}
-              />
+              <Input type="time" value={form.time_start} onChange={e => handleTimeChange('time_start', e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Hora de saída</Label>
-              <Input
-                type="time"
-                value={form.time_end}
-                onChange={e => handleTimeChange('time_end', e.target.value)}
-              />
+              <Input type="time" value={form.time_end} onChange={e => handleTimeChange('time_end', e.target.value)} />
             </div>
           </div>
           <div className="space-y-1">
@@ -208,6 +221,14 @@ export function DailyReportForm({ jobId, jobTitle, userId }: DailyReportFormProp
 
         <div className="space-y-2">
           <Label>Fotos</Label>
+          {existingReport?.media && existingReport.media.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {existingReport.media.map((m, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={i} src={m.public_url} alt="" className="h-20 w-20 object-cover rounded-lg border" />
+              ))}
+            </div>
+          )}
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
