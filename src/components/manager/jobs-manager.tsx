@@ -6,22 +6,28 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, CalendarDays, List, Briefcase, MapPin, User } from 'lucide-react'
+import { Plus, CalendarDays, List, Briefcase, MapPin, Users } from 'lucide-react'
 import type { Job } from '@/types'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
+interface JobWorkerRow {
+  job_id: string
+  worker_id: string
+  worker?: { full_name: string } | null
+}
+
 interface JobsManagerProps {
-  jobs: (Job & { client?: { name: string } | null; worker?: { full_name: string } | null })[]
+  jobs: (Job & { client?: { name: string } | null })[]
   clients: { id: string; name: string }[]
   workers: { id: string; full_name: string }[]
+  jobWorkers: JobWorkerRow[]
   organizationId: string
 }
 
@@ -30,7 +36,7 @@ const emptyForm = {
   description: '',
   location: '',
   client_id: '',
-  worker_id: '',
+  worker_ids: [] as string[],
   scheduled_date: '',
   scheduled_time_start: '',
   scheduled_time_end: '',
@@ -38,19 +44,32 @@ const emptyForm = {
 }
 
 const statusConfig = {
-  pending: { label: 'Pendente', variant: 'secondary' as const, color: 'bg-yellow-100 text-yellow-800' },
-  in_progress: { label: 'Em curso', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' },
-  completed: { label: 'Concluído', variant: 'outline' as const, color: 'bg-green-100 text-green-800' },
-  cancelled: { label: 'Cancelado', variant: 'destructive' as const, color: 'bg-red-100 text-red-800' },
+  pending: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
+  in_progress: { label: 'Em curso', color: 'bg-blue-100 text-blue-800' },
+  completed: { label: 'Concluído', color: 'bg-green-100 text-green-800' },
+  cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
 }
 
-export function JobsManager({ jobs, clients, workers, organizationId }: JobsManagerProps) {
+export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId }: JobsManagerProps) {
   const router = useRouter()
   const supabase = createClient()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Job | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(false)
+
+  const workersByJob: Record<string, { worker_id: string; full_name: string }[]> = {}
+  jobWorkers.forEach(jw => {
+    if (!workersByJob[jw.job_id]) workersByJob[jw.job_id] = []
+    workersByJob[jw.job_id].push({ worker_id: jw.worker_id, full_name: (jw.worker as { full_name: string } | null)?.full_name ?? '' })
+  })
+
+  function toggleWorker(id: string) {
+    setForm(f => ({
+      ...f,
+      worker_ids: f.worker_ids.includes(id) ? f.worker_ids.filter(w => w !== id) : [...f.worker_ids, id],
+    }))
+  }
 
   function openNew() {
     setEditing(null)
@@ -65,7 +84,7 @@ export function JobsManager({ jobs, clients, workers, organizationId }: JobsMana
       description: job.description ?? '',
       location: job.location ?? '',
       client_id: job.client_id ?? '',
-      worker_id: job.worker_id ?? '',
+      worker_ids: workersByJob[job.id]?.map(w => w.worker_id) ?? [],
       scheduled_date: job.scheduled_date ?? '',
       scheduled_time_start: job.scheduled_time_start ?? '',
       scheduled_time_end: job.scheduled_time_end ?? '',
@@ -76,23 +95,35 @@ export function JobsManager({ jobs, clients, workers, organizationId }: JobsMana
 
   async function handleSave() {
     setLoading(true)
+    const { worker_ids, ...rest } = form
     const payload = {
-      ...form,
-      client_id: form.client_id || null,
-      worker_id: form.worker_id || null,
-      scheduled_date: form.scheduled_date || null,
-      scheduled_time_start: form.scheduled_time_start || null,
-      scheduled_time_end: form.scheduled_time_end || null,
+      ...rest,
+      client_id: rest.client_id || null,
+      scheduled_date: rest.scheduled_date || null,
+      scheduled_time_start: rest.scheduled_time_start || null,
+      scheduled_time_end: rest.scheduled_time_end || null,
     }
+
+    let jobId: string
     if (editing) {
       await supabase.from('jobs').update(payload).eq('id', editing.id)
+      jobId = editing.id
+      await supabase.from('job_workers').delete().eq('job_id', jobId)
     } else {
-      await supabase.from('jobs').insert({ ...payload, organization_id: organizationId })
+      const { data } = await supabase.from('jobs').insert({ ...payload, organization_id: organizationId }).select().single()
+      jobId = data!.id
     }
+
+    if (worker_ids.length > 0) {
+      await supabase.from('job_workers').insert(worker_ids.map(wid => ({ job_id: jobId, worker_id: wid })))
+    }
+
     setLoading(false)
     setOpen(false)
     router.refresh()
   }
+
+  const selectedWorkerNames = form.worker_ids.map(id => workers.find(w => w.id === id)?.full_name).filter(Boolean).join(', ')
 
   const jobForm = (
     <div className="space-y-4 mt-2">
@@ -115,19 +146,44 @@ export function JobsManager({ jobs, clients, workers, organizationId }: JobsMana
           </Select>
         </div>
         <div className="space-y-1">
-          <Label>Trabalhador</Label>
-          <Select value={form.worker_id} onValueChange={v => setForm({ ...form, worker_id: v ?? '' })}>
+          <Label>Estado</Label>
+          <Select value={form.status} onValueChange={v => setForm({ ...form, status: (v ?? 'pending') as Job['status'] })}>
             <SelectTrigger>
-              <span className="flex-1 text-left text-sm truncate">
-                {form.worker_id ? workers.find(w => w.id === form.worker_id)?.full_name : <span className="text-muted-foreground">Selecionar...</span>}
+              <span className="flex-1 text-left text-sm">
+                {statusConfig[form.status]?.label ?? 'Selecionar...'}
               </span>
             </SelectTrigger>
             <SelectContent>
-              {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
+              {Object.entries(statusConfig).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
+
+      <div className="space-y-1">
+        <Label>Trabalhadores</Label>
+        {selectedWorkerNames && (
+          <p className="text-xs text-blue-600 mb-1">{selectedWorkerNames}</p>
+        )}
+        <div className="border rounded-lg divide-y max-h-36 overflow-y-auto">
+          {workers.length === 0 ? (
+            <p className="text-sm text-gray-400 p-3 text-center">Sem trabalhadores</p>
+          ) : workers.map(w => (
+            <label key={w.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50">
+              <input
+                type="checkbox"
+                checked={form.worker_ids.includes(w.id)}
+                onChange={() => toggleWorker(w.id)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+              />
+              <span className="text-sm">{w.full_name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
       <div className="space-y-1">
         <Label>Local</Label>
         <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Morada do trabalho" />
@@ -145,21 +201,6 @@ export function JobsManager({ jobs, clients, workers, organizationId }: JobsMana
           <Label>Hora fim</Label>
           <Input type="time" value={form.scheduled_time_end} onChange={e => setForm(f => ({ ...f, scheduled_time_end: e.target.value }))} />
         </div>
-      </div>
-      <div className="space-y-1">
-        <Label>Estado</Label>
-        <Select value={form.status} onValueChange={v => setForm({ ...form, status: (v ?? 'pending') as Job['status'] })}>
-          <SelectTrigger>
-            <span className="flex-1 text-left text-sm">
-              {statusConfig[form.status]?.label ?? 'Selecionar...'}
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(statusConfig).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
       <div className="space-y-1">
         <Label>Descrição</Label>
@@ -208,6 +249,7 @@ export function JobsManager({ jobs, clients, workers, organizationId }: JobsMana
             <div className="space-y-3">
               {jobs.map(job => {
                 const st = statusConfig[job.status]
+                const assignedWorkers = workersByJob[job.id] ?? []
                 return (
                   <Card key={job.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
@@ -218,9 +260,14 @@ export function JobsManager({ jobs, clients, workers, organizationId }: JobsMana
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.color}`}>{st.label}</span>
                           </div>
                           <div className="flex flex-wrap gap-3 mt-1.5 text-sm text-gray-500">
-                            {job.client && <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" />{(job.client as { name: string }).name}</span>}
-                            {job.location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{job.location}</span>}
-                            {job.worker && <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" />{(job.worker as { full_name: string }).full_name}</span>}
+                            {job.client && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{(job.client as { name: string }).name}</span>}
+                            {job.location && <span className="text-xs text-gray-400">{job.location}</span>}
+                            {assignedWorkers.length > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3.5 w-3.5" />
+                                {assignedWorkers.map(w => w.full_name).join(', ')}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="text-right shrink-0">

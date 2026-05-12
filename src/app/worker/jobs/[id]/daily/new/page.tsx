@@ -7,7 +7,16 @@ export default async function NewDailyReportPage({ params }: { params: Promise<{
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: job } = await supabase.from('jobs').select('id, title').eq('id', id).eq('worker_id', user!.id).single()
+  const { data: access } = await supabase
+    .from('job_workers')
+    .select('job_id')
+    .eq('job_id', id)
+    .eq('worker_id', user!.id)
+    .single()
+
+  if (!access) notFound()
+
+  const { data: job } = await supabase.from('jobs').select('id, title').eq('id', id).single()
   if (!job) notFound()
 
   return <DailyReportForm jobId={id} jobTitle={job.title} userId={user!.id} />

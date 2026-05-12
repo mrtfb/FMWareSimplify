@@ -7,7 +7,16 @@ export default async function FinishReportPage({ params }: { params: Promise<{ i
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: job } = await supabase.from('jobs').select('id, title, client:clients(name)').eq('id', id).eq('worker_id', user!.id).single()
+  const { data: access } = await supabase
+    .from('job_workers')
+    .select('job_id')
+    .eq('job_id', id)
+    .eq('worker_id', user!.id)
+    .single()
+
+  if (!access) notFound()
+
+  const { data: job } = await supabase.from('jobs').select('id, title, client:clients(name)').eq('id', id).single()
   if (!job) notFound()
 
   const { data: existing } = await supabase

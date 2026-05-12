@@ -32,6 +32,7 @@ const managerNav: NavItem[] = [
 const workerNav: NavItem[] = [
   { href: '/worker', label: 'Início', icon: LayoutDashboard },
   { href: '/worker/jobs', label: 'Meus Trabalhos', icon: Briefcase },
+  { href: '/worker/calendar', label: 'Calendário', icon: CalendarDays },
 ]
 
 interface SidebarProps {

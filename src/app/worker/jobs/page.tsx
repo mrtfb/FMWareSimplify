@@ -5,12 +5,21 @@ export default async function WorkerJobsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: jobs } = await supabase
-    .from('jobs')
-    .select('*, client:clients(name, address)')
+  const { data: jobWorkers } = await supabase
+    .from('job_workers')
+    .select('job_id')
     .eq('worker_id', user!.id)
-    .neq('status', 'cancelled')
-    .order('scheduled_date', { ascending: true })
+
+  const jobIds = jobWorkers?.map(jw => jw.job_id) ?? []
+
+  const { data: jobs } = jobIds.length > 0
+    ? await supabase
+        .from('jobs')
+        .select('*, client:clients(name, address)')
+        .in('id', jobIds)
+        .neq('status', 'cancelled')
+        .order('scheduled_date', { ascending: true })
+    : { data: [] }
 
   return <WorkerJobList jobs={jobs ?? []} />
 }
