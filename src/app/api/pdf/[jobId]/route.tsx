@@ -112,6 +112,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                   <Image src={startReport.client_signature_url} style={styles.signature} />
                 </View>
               )}
+              {startReport.media && startReport.media.length > 0 && (
+                <View style={{ marginTop: 6 }}>
+                  <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 4 }}>Fotos ({startReport.media.length}):</Text>
+                  <View style={styles.photoGrid}>
+                    {startReport.media.slice(0, 4).map((m: any, i: number) => (
+                      <Image key={i} src={m.public_url} style={styles.photo} />
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
           </View>
         )}
@@ -185,6 +195,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 <View style={{ marginTop: 6 }}>
                   <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Assinatura:</Text>
                   <Image src={finishReport.client_signature_url} style={styles.signature} />
+                </View>
+              )}
+              {finishReport.media && finishReport.media.length > 0 && (
+                <View style={{ marginTop: 6 }}>
+                  <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 4 }}>Fotos ({finishReport.media.length}):</Text>
+                  <View style={styles.photoGrid}>
+                    {finishReport.media.slice(0, 4).map((m: any, i: number) => (
+                      <Image key={i} src={m.public_url} style={styles.photo} />
+                    ))}
+                  </View>
                 </View>
               )}
             </View>
