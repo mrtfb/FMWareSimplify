@@ -14,6 +14,7 @@ import { SignaturePad, type SignaturePadRef } from './signature-pad'
 interface JobReportFormProps {
   jobId: string
   jobTitle: string
+  clientName?: string | null
   userId: string
   reportType: 'start' | 'finish'
   existingReport?: {
@@ -28,7 +29,7 @@ interface JobReportFormProps {
   } | null
 }
 
-export function JobReportForm({ jobId, jobTitle, userId, reportType, existingReport }: JobReportFormProps) {
+export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType, existingReport }: JobReportFormProps) {
   const router = useRouter()
   const supabase = createClient()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -36,11 +37,13 @@ export function JobReportForm({ jobId, jobTitle, userId, reportType, existingRep
 
   const isStart = reportType === 'start'
 
+  const today = new Date().toISOString().split('T')[0]
+
   const [form, setForm] = useState({
-    report_date: existingReport?.report_date ?? new Date().toISOString().split('T')[0],
+    report_date: existingReport?.report_date ?? today,
     description: existingReport?.description ?? '',
     client_observations: existingReport?.client_observations ?? '',
-    client_name: existingReport?.client_name ?? '',
+    client_name: existingReport?.client_name ?? clientName ?? '',
     client_approved: existingReport?.client_approved ?? null as boolean | null,
   })
   const [photos, setPhotos] = useState<File[]>([])
@@ -164,7 +167,7 @@ export function JobReportForm({ jobId, jobTitle, userId, reportType, existingRep
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1">
           <Label>Data *</Label>
-          <Input type="date" value={form.report_date} onChange={e => setForm(f => ({ ...f, report_date: e.target.value }))} />
+          <Input type="date" value={form.report_date} max={today} onChange={e => setForm(f => ({ ...f, report_date: e.target.value }))} />
         </div>
 
         <div className="space-y-1">
