@@ -104,7 +104,11 @@ export function JobsManager({ jobs, clients, workers, organizationId }: JobsMana
         <div className="space-y-1">
           <Label>Cliente</Label>
           <Select value={form.client_id} onValueChange={v => setForm({ ...form, client_id: v ?? '' })}>
-            <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+            <SelectTrigger>
+              <span className="flex-1 text-left text-sm truncate">
+                {form.client_id ? clients.find(c => c.id === form.client_id)?.name : <span className="text-muted-foreground">Selecionar...</span>}
+              </span>
+            </SelectTrigger>
             <SelectContent>
               {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
@@ -113,7 +117,11 @@ export function JobsManager({ jobs, clients, workers, organizationId }: JobsMana
         <div className="space-y-1">
           <Label>Trabalhador</Label>
           <Select value={form.worker_id} onValueChange={v => setForm({ ...form, worker_id: v ?? '' })}>
-            <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+            <SelectTrigger>
+              <span className="flex-1 text-left text-sm truncate">
+                {form.worker_id ? workers.find(w => w.id === form.worker_id)?.full_name : <span className="text-muted-foreground">Selecionar...</span>}
+              </span>
+            </SelectTrigger>
             <SelectContent>
               {workers.map(w => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
             </SelectContent>
@@ -141,7 +149,11 @@ export function JobsManager({ jobs, clients, workers, organizationId }: JobsMana
       <div className="space-y-1">
         <Label>Estado</Label>
         <Select value={form.status} onValueChange={v => setForm({ ...form, status: (v ?? 'pending') as Job['status'] })}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger>
+            <span className="flex-1 text-left text-sm">
+              {statusConfig[form.status]?.label ?? 'Selecionar...'}
+            </span>
+          </SelectTrigger>
           <SelectContent>
             {Object.entries(statusConfig).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v.label}</SelectItem>
