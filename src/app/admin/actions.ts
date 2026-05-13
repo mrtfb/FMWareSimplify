@@ -102,7 +102,7 @@ export async function createOrgWithManager({
     email.trim().toLowerCase(),
     {
       data: { full_name: managerName.trim() },
-      redirectTo: `${appUrl}/auth/callback?next=/auth/reset-password`,
+      redirectTo: `${appUrl}/auth/reset-password`,
     }
   )
 
