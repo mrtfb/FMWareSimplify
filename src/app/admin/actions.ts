@@ -59,6 +59,7 @@ export async function updateOrg({
         const { data: linkData } = await admin.auth.admin.generateLink({
           type: 'recovery',
           email: newEmail,
+          options: { redirectTo: `${appUrl}/auth/callback?next=/auth/reset-password` },
         })
         const resetLink = linkData?.properties?.action_link ?? `${appUrl}/auth/login`
 
@@ -156,6 +157,7 @@ export async function createOrgWithManager({
   const { data: linkData } = await admin.auth.admin.generateLink({
     type: 'recovery',
     email: email.trim().toLowerCase(),
+    options: { redirectTo: `${appUrl}/auth/callback?next=/auth/reset-password` },
   })
   const resetLink = linkData?.properties?.action_link ?? `${appUrl}/auth/login`
 
