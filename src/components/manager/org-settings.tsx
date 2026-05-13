@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -75,7 +74,7 @@ export function OrgSettings({ org }: { org: Org }) {
         <div className="flex items-center gap-4">
           <div className="h-16 w-16 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50">
             {displayLogo ? (
-              <Image src={displayLogo} alt="Logo" width={64} height={64} className="h-full w-full object-cover" />
+              <img src={displayLogo} alt="Logo" className="h-full w-full object-cover" />
             ) : (
               <Upload className="h-6 w-6 text-gray-300" />
             )}

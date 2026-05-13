@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { signOut } from '@/app/auth/actions'
 import { cn } from '@/lib/utils'
@@ -57,13 +56,8 @@ export function Sidebar({ role, userName, orgName, orgLogo }: SidebarProps) {
       <div className="border-b border-border px-[18px] pb-[18px] pt-5">
         <div className="flex items-center gap-2.5">
           {orgLogo ? (
-            <Image
-              src={orgLogo}
-              alt={orgName ?? 'Logo'}
-              width={28}
-              height={28}
-              className="h-7 w-7 rounded-md object-cover"
-            />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={orgLogo} alt={orgName ?? 'Logo'} className="h-7 w-7 rounded-md object-cover" />
           ) : (
             <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber text-ink">
               <ClipboardList className="h-4 w-4" strokeWidth={2.2} />
