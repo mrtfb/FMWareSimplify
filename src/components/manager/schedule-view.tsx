@@ -32,6 +32,7 @@ interface JobOnSchedule {
   scheduled_date: string // YYYY-MM-DD
   scheduled_time_start: string | null // HH:MM:SS
   scheduled_time_end: string | null
+  client_id?: string | null
   client?: { name: string } | null
   worker_ids: string[]
 }
@@ -56,12 +57,25 @@ function timeToFrac(t: string | null): number {
   return Math.max(0, Math.min(DAY_END - DAY_START, h + m / 60 - DAY_START))
 }
 
-const STATUS_BG: Record<JobStatus, { bg: string; bar: string; text: string }> = {
-  pending:     { bg: 'bg-[oklch(0.94_0.06_75)]',  bar: 'bg-s-pending',     text: 'text-[oklch(0.32_0.08_70)]'  },
-  in_progress: { bg: 'bg-[oklch(0.92_0.06_245)]', bar: 'bg-s-in-progress', text: 'text-[oklch(0.32_0.10_245)]' },
-  completed:   { bg: 'bg-[oklch(0.94_0.05_145)]', bar: 'bg-s-completed',   text: 'text-[oklch(0.32_0.08_145)]' },
-  cancelled:   { bg: 'bg-[oklch(0.95_0.005_80)]', bar: 'bg-s-cancelled',   text: 'text-mute'                   },
-  blocked:     { bg: 'bg-[oklch(0.94_0.08_25)]',  bar: 'bg-s-blocked',     text: 'text-[oklch(0.32_0.12_25)]'  },
+// Derive a deterministic hue from any string (client ID).
+function hueFromId(id: string): number {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  // Spread across 360° but skip the amber/yellow band (50-80°) reserved for the UI chrome.
+  const raw = h % 300
+  return raw < 50 ? raw : raw + 30
+}
+
+function jobColors(job: JobOnSchedule): { bg: string; bar: string; text: string } {
+  if (job.status === 'cancelled') {
+    return { bg: 'bg-[oklch(0.95_0.005_80)]', bar: 'border-l-[oklch(0.7_0.005_80)]', text: 'text-mute' }
+  }
+  const hue = job.client_id ? hueFromId(job.client_id) : 200
+  return {
+    bg:   `bg-[oklch(0.93_0.06_${hue})]`,
+    bar:  `border-l-[oklch(0.55_0.15_${hue})]`,
+    text: `text-[oklch(0.30_0.09_${hue})]`,
+  }
 }
 
 export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
@@ -228,7 +242,7 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
                           timeToFrac(j.scheduled_time_end ?? j.scheduled_time_start)) /
                           (DAY_END - DAY_START)) *
                         100
-                      const s = STATUS_BG[j.status]
+                      const s = jobColors(j)
                       return (
                         <Link
                           key={j.id}
@@ -236,7 +250,7 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
                           className={cn(
                             'absolute inset-y-1.5 overflow-hidden rounded border-l-2 px-2 py-1 transition-shadow hover:shadow-sm',
                             s.bg,
-                            s.bar.replace('bg-', 'border-l-'),
+                            s.bar,
                             j.status === 'cancelled' && 'line-through opacity-70',
                           )}
                           style={{ left: `${left}%`, right: `${right}%` }}

@@ -29,7 +29,7 @@ export default async function SchedulePage() {
       .order('full_name'),
     supabase
       .from('jobs')
-      .select('id, title, status, scheduled_date, scheduled_time_start, scheduled_time_end, client:clients(name)')
+      .select('id, title, status, scheduled_date, scheduled_time_start, scheduled_time_end, client_id, client:clients(name)')
       .eq('organization_id', orgId)
       .not('scheduled_date', 'is', null),
     supabase.from('job_workers').select('job_id, worker_id'),

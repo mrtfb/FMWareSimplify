@@ -35,8 +35,8 @@ const emptyForm = {
   client_id: '',
   worker_ids: [] as string[],
   scheduled_date: '',
-  scheduled_time_start: '',
-  scheduled_time_end: '',
+  scheduled_time_start: '08:00',
+  scheduled_time_end: '17:00',
   status: 'pending' as Job['status'],
   recurrence: 'none' as 'none' | 'weekly' | 'monthly',
 }
