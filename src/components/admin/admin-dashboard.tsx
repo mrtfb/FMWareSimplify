@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { pt as ptPT } from 'date-fns/locale'
-import { Building2, Users, Briefcase, Plus, MoreHorizontal, ShieldCheck } from 'lucide-react'
+import { Building2, Users, Briefcase, Plus, Pencil, ShieldCheck, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { setOrgStatus, setOrgPlan, createOrgWithManager } from '@/app/admin/actions'
+import { setOrgStatus, setOrgPlan, createOrgWithManager, updateOrg } from '@/app/admin/actions'
 
 interface OrgRow {
   id: string
@@ -20,6 +20,9 @@ interface OrgRow {
   managers: number
   jobs_total: number
   jobs_active: number
+  manager_id: string | null
+  manager_name: string | null
+  manager_email: string | null
 }
 
 const planColors: Record<string, string> = {
@@ -33,12 +36,26 @@ const plans = ['trial', 'starter', 'pro', 'business']
 
 export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
   const [newOpen, setNewOpen] = useState(false)
+  const [editOrg, setEditOrg] = useState<OrgRow | null>(null)
   const [form, setForm] = useState({ orgName: '', managerName: '', email: '', password: '' })
+  const [editForm, setEditForm] = useState({ name: '', plan: '', status: '', managerEmail: '', managerName: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
   function set(f: string, v: string) { setForm(prev => ({ ...prev, [f]: v })) }
+  function setE(f: string, v: string) { setEditForm(prev => ({ ...prev, [f]: v })) }
+
+  function openEdit(org: OrgRow) {
+    setEditForm({
+      name: org.name,
+      plan: org.plan,
+      status: org.status,
+      managerEmail: org.manager_email ?? '',
+      managerName: org.manager_name ?? '',
+    })
+    setEditOrg(org)
+    setError('')
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -48,6 +65,24 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
     if (result.error) { setError(result.error); return }
     setNewOpen(false)
     setForm({ orgName: '', managerName: '', email: '', password: '' })
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editOrg) return
+    setLoading(true); setError('')
+    const result = await updateOrg({
+      orgId: editOrg.id,
+      name: editForm.name,
+      plan: editForm.plan,
+      status: editForm.status,
+      managerId: editOrg.manager_id,
+      managerEmail: editForm.managerEmail,
+      managerName: editForm.managerName,
+    })
+    setLoading(false)
+    if (result.error) { setError(result.error); return }
+    setEditOrg(null)
   }
 
   return (
@@ -92,9 +127,9 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
             <thead>
               <tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
                 <th className="text-left px-4 py-3">Empresa</th>
+                <th className="text-left px-4 py-3">Gestor</th>
                 <th className="text-left px-4 py-3">Plano</th>
                 <th className="text-left px-4 py-3">Estado</th>
-                <th className="text-center px-4 py-3">Gestores</th>
                 <th className="text-center px-4 py-3">Trabalhadores</th>
                 <th className="text-center px-4 py-3">Trabalhos</th>
                 <th className="text-left px-4 py-3">Criado</th>
@@ -106,6 +141,20 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
                 <tr key={org.id} className="border-b last:border-0 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{org.name}</td>
                   <td className="px-4 py-3">
+                    {org.manager_name ? (
+                      <div>
+                        <p className="text-gray-800 font-medium text-xs">{org.manager_name}</p>
+                        {org.manager_email && (
+                          <p className="text-gray-400 text-[11px] flex items-center gap-1 mt-0.5">
+                            <Mail className="h-3 w-3" />{org.manager_email}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${planColors[org.plan] ?? 'bg-gray-100 text-gray-600'}`}>
                       {org.plan}
                     </span>
@@ -115,7 +164,6 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
                       {org.status === 'active' ? 'Ativa' : 'Suspensa'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-center text-gray-600">{org.managers}</td>
                   <td className="px-4 py-3 text-center text-gray-600">{org.workers}</td>
                   <td className="px-4 py-3 text-center text-gray-600">
                     {org.jobs_active > 0
@@ -126,42 +174,14 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
                   <td className="px-4 py-3 text-gray-500 text-xs">
                     {format(new Date(org.created_at), 'dd MMM yyyy', { locale: ptPT })}
                   </td>
-                  <td className="px-4 py-3 relative">
+                  <td className="px-4 py-3">
                     <button
-                      onClick={() => setOpenMenuId(openMenuId === org.id ? null : org.id)}
+                      onClick={() => openEdit(org)}
                       className="p-1.5 rounded hover:bg-gray-100"
+                      title="Editar"
                     >
-                      <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                      <Pencil className="h-4 w-4 text-gray-400" />
                     </button>
-                    {openMenuId === org.id && (
-                      <div className="absolute right-4 top-10 z-10 bg-white border rounded-lg shadow-lg py-1 w-44">
-                        {plans.map(p => (
-                          <button
-                            key={p}
-                            className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
-                            onClick={() => { setOrgPlan(org.id, p); setOpenMenuId(null) }}
-                          >
-                            Plano: {p}
-                          </button>
-                        ))}
-                        <div className="border-t my-1" />
-                        {org.status === 'active' ? (
-                          <button
-                            className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                            onClick={() => { setOrgStatus(org.id, 'suspended'); setOpenMenuId(null) }}
-                          >
-                            Suspender
-                          </button>
-                        ) : (
-                          <button
-                            className="w-full text-left px-3 py-1.5 text-sm text-green-600 hover:bg-green-50"
-                            onClick={() => { setOrgStatus(org.id, 'active'); setOpenMenuId(null) }}
-                          >
-                            Reativar
-                          </button>
-                        )}
-                      </div>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -176,6 +196,60 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
           </table>
         </div>
       </div>
+
+      {/* Edit org dialog */}
+      <Dialog open={!!editOrg} onOpenChange={open => { if (!open) setEditOrg(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar organização</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4 mt-2">
+            <div className="space-y-1">
+              <Label>Nome da empresa</Label>
+              <Input value={editForm.name} onChange={e => setE('name', e.target.value)} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Plano</Label>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={editForm.plan}
+                  onChange={e => setE('plan', e.target.value)}
+                >
+                  {plans.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>Estado</Label>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={editForm.status}
+                  onChange={e => setE('status', e.target.value)}
+                >
+                  <option value="active">Ativa</option>
+                  <option value="suspended">Suspensa</option>
+                </select>
+              </div>
+            </div>
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Gestor principal</p>
+              <div className="space-y-1">
+                <Label>Nome</Label>
+                <Input value={editForm.managerName} onChange={e => setE('managerName', e.target.value)} placeholder="Nome do gestor" />
+              </div>
+              <div className="space-y-1">
+                <Label>Email</Label>
+                <Input type="email" value={editForm.managerEmail} onChange={e => setE('managerEmail', e.target.value)} placeholder="email@empresa.pt" />
+              </div>
+            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setEditOrg(null)}>Cancelar</Button>
+              <Button type="submit" disabled={loading}>{loading ? 'A guardar...' : 'Guardar'}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* New org dialog */}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>

@@ -160,8 +160,6 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
   }
 
   async function handleSave() {
-    console.log('[handleSave] form.worker_ids:', form.worker_ids, 'date:', form.scheduled_date, 'time:', form.scheduled_time_start)
-    // Check for conflicts before saving (non-blocking — just warn)
     if (form.worker_ids.length && form.scheduled_date && form.scheduled_time_start) {
       try {
         const found = await checkConflictsAction({
@@ -172,14 +170,11 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
           timeEnd: form.scheduled_time_end || form.scheduled_time_start,
           excludeJobId: editing?.id,
         })
-        console.log('[handleSave] conflicts found:', found)
         setConflicts(found)
-        if (found.length) return  // show warning, don't save yet
-      } catch (err) {
-        console.error('[handleSave] conflict check error:', err)
+        if (found.length) return
+      } catch {
+        // conflict check failed — proceed without blocking
       }
-    } else {
-      console.log('[handleSave] skipping conflict check — missing workers/date/time')
     }
     await handleSaveForced()
   }

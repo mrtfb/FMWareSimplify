@@ -15,6 +15,49 @@ export async function setOrgPlan(orgId: string, plan: string) {
   revalidatePath('/admin')
 }
 
+export async function updateOrg({
+  orgId,
+  name,
+  plan,
+  status,
+  managerId,
+  managerEmail,
+  managerName,
+}: {
+  orgId: string
+  name: string
+  plan: string
+  status: string
+  managerId: string | null
+  managerEmail: string
+  managerName: string
+}): Promise<{ error?: string }> {
+  const admin = createAdminClient()
+
+  const { error: orgError } = await admin
+    .from('organizations')
+    .update({ name: name.trim(), plan, status })
+    .eq('id', orgId)
+
+  if (orgError) return { error: 'Erro ao atualizar organização.' }
+
+  if (managerId) {
+    if (managerEmail.trim()) {
+      const { error: emailError } = await admin.auth.admin.updateUserById(managerId, {
+        email: managerEmail.trim().toLowerCase(),
+      })
+      if (emailError) return { error: `Erro ao atualizar email: ${emailError.message}` }
+    }
+
+    if (managerName.trim()) {
+      await admin.from('profiles').update({ full_name: managerName.trim() }).eq('id', managerId)
+    }
+  }
+
+  revalidatePath('/admin')
+  return {}
+}
+
 export async function createOrgWithManager({
   orgName,
   managerName,
