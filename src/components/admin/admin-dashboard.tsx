@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { pt as ptPT } from 'date-fns/locale'
-import { Building2, Users, Briefcase, Plus, Pencil, ShieldCheck, Mail } from 'lucide-react'
+import { Building2, Users, Briefcase, Plus, Pencil, ShieldCheck, Mail, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { signOut } from '@/app/auth/actions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -98,10 +99,17 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
             <p className="text-xs text-gray-500">FichasWork — Gestão de organizações</p>
           </div>
         </div>
-        <Button onClick={() => setNewOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova organização
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setNewOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova organização
+          </Button>
+          <form action={signOut}>
+            <button type="submit" className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors" title="Sair">
+              <LogOut className="h-4 w-4" />
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Stats */}
