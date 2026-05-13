@@ -50,7 +50,6 @@ export async function createOrgWithManager({
   await admin.from('profiles').insert({
     id: authData.user.id,
     full_name: managerName.trim(),
-    email: email.trim().toLowerCase(),
     role: 'manager',
     organization_id: org.id,
   })
