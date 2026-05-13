@@ -36,7 +36,9 @@ export default function LoginPage() {
       .eq('id', data.user.id)
       .single()
 
-    if (profile?.role === 'manager') {
+    if (profile?.role === 'superadmin') {
+      router.push('/admin')
+    } else if (profile?.role === 'manager') {
       router.push('/manager')
     } else {
       router.push('/worker')
