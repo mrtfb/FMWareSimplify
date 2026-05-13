@@ -37,6 +37,7 @@ const emptyForm = {
   scheduled_date: '',
   scheduled_time_start: '08:00',
   scheduled_time_end: '17:00',
+  duration_days: 1,
   status: 'pending' as Job['status'],
   recurrence: 'none' as 'none' | 'weekly' | 'monthly',
 }
@@ -109,6 +110,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
       scheduled_date: job.scheduled_date ?? '',
       scheduled_time_start: job.scheduled_time_start ?? '',
       scheduled_time_end: job.scheduled_time_end ?? '',
+      duration_days: job.duration_days ?? 1,
       status: job.status,
       recurrence: (job.recurrence as 'none' | 'weekly' | 'monthly') ?? 'none',
     })
@@ -257,10 +259,14 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
         <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Morada do trabalho" />
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <div className="space-y-1">
-          <Label>Data</Label>
+          <Label>Data início</Label>
           <Input type="date" value={form.scheduled_date} onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} />
+        </div>
+        <div className="space-y-1">
+          <Label>Dias</Label>
+          <Input type="number" min="1" value={form.duration_days} onChange={e => setForm(f => ({ ...f, duration_days: Math.max(1, parseInt(e.target.value) || 1) }))} />
         </div>
         <div className="space-y-1">
           <Label>Hora início</Label>

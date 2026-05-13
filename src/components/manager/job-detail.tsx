@@ -54,6 +54,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
     scheduled_date: job.scheduled_date ?? '',
     scheduled_time_start: job.scheduled_time_start ?? '',
     scheduled_time_end: job.scheduled_time_end ?? '',
+    duration_days: job.duration_days ?? 1,
     status: job.status,
     recurrence: (job.recurrence ?? 'none') as 'none' | 'weekly' | 'monthly',
   })
@@ -149,6 +150,11 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
                 <Clock className="h-4 w-4" />
                 {job.scheduled_time_start.slice(0, 5)}
                 {job.scheduled_time_end && `–${job.scheduled_time_end.slice(0, 5)}`}
+              </span>
+            )}
+            {(job.duration_days ?? 1) > 1 && (
+              <span className="flex items-center gap-1">
+                <Calendar className="h-4 w-4" />{job.duration_days} dias
               </span>
             )}
           </div>
@@ -275,10 +281,14 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
               <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Morada do trabalho" />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               <div className="space-y-1">
-                <Label>Data</Label>
+                <Label>Data início</Label>
                 <Input type="date" value={form.scheduled_date} onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Dias</Label>
+                <Input type="number" min="1" value={form.duration_days} onChange={e => setForm(f => ({ ...f, duration_days: Math.max(1, parseInt(e.target.value) || 1) }))} />
               </div>
               <div className="space-y-1">
                 <Label>Hora início</Label>

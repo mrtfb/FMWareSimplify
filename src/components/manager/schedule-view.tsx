@@ -33,6 +33,7 @@ interface JobOnSchedule {
   scheduled_date: string // YYYY-MM-DD
   scheduled_time_start: string | null // HH:MM:SS
   scheduled_time_end: string | null
+  duration_days?: number | null
   client_id?: string | null
   client?: { name: string } | null
   worker_ids: string[]
@@ -73,14 +74,20 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
   const todayISO = format(new Date(), 'yyyy-MM-dd')
 
   // Bucket jobs by worker × day for O(1) lookups inside the render loop.
+  // Multi-day jobs appear on every date they span.
   const byWorkerDay = useMemo(() => {
     const map = new Map<string, JobOnSchedule[]>()
     for (const j of jobs) {
-      for (const wid of j.worker_ids) {
-        const key = `${wid}|${j.scheduled_date}`
-        const arr = map.get(key) ?? []
-        arr.push(j)
-        map.set(key, arr)
+      const days = Math.max(1, j.duration_days ?? 1)
+      const start = new Date(j.scheduled_date + 'T12:00:00')
+      for (let d = 0; d < days; d++) {
+        const date = format(addDays(start, d), 'yyyy-MM-dd')
+        for (const wid of j.worker_ids) {
+          const key = `${wid}|${date}`
+          const arr = map.get(key) ?? []
+          arr.push(j)
+          map.set(key, arr)
+        }
       }
     }
     return map
