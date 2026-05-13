@@ -24,7 +24,15 @@ export async function registerOrganization({
 
   if (orgError || !org) return { error: `Erro ao criar organização: ${orgError?.message ?? 'sem dados'}` }
 
-  // 2. Create auth user (email already confirmed)
+  // 2. Check email not already in use
+  const { data: existingUsers } = await admin.auth.admin.listUsers()
+  const emailTaken = existingUsers?.users?.some(u => u.email === email.trim().toLowerCase())
+  if (emailTaken) {
+    await admin.from('organizations').delete().eq('id', org.id)
+    return { error: 'Este email já está registado.' }
+  }
+
+  // 3. Create auth user (email already confirmed)
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email: email.trim().toLowerCase(),
     password,
@@ -33,14 +41,11 @@ export async function registerOrganization({
 
   if (authError || !authData.user) {
     await admin.from('organizations').delete().eq('id', org.id)
-    if (authError?.message?.includes('already registered')) {
-      return { error: 'Este email já está registado.' }
-    }
-    return { error: 'Erro ao criar conta.' }
+    return { error: `Erro ao criar conta: ${authError?.message}` }
   }
 
-  // 3. Create manager profile
-  const { error: profileError } = await admin.from('profiles').insert({
+  // 4. Create manager profile — upsert to survive duplicate from previous failed attempt
+  const { error: profileError } = await admin.from('profiles').upsert({
     id: authData.user.id,
     full_name: managerName.trim(),
     role: 'manager',
