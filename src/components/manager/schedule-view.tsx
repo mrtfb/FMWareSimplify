@@ -16,6 +16,7 @@
 
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { addDays, format, startOfWeek } from 'date-fns'
 import { pt as ptPT } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
@@ -68,6 +69,7 @@ function jobTileStyle(job: JobOnSchedule): React.CSSProperties {
 }
 
 export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
+  const router = useRouter()
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(anchor, i)), [anchor])
@@ -104,7 +106,7 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
         <div className="flex items-center gap-2">
           <div className="flex overflow-hidden rounded-md border border-line-2">
             <button className="bg-ink px-3 py-1.5 text-xs font-medium text-background">Equipa</button>
-            <button className="px-3 py-1.5 text-xs text-ink-2 hover:bg-raise">Lista</button>
+            <button className="px-3 py-1.5 text-xs text-ink-2 hover:bg-raise" onClick={() => router.push('/manager/jobs')}>Lista</button>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -128,7 +130,7 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
-          <Button size="sm" className="bg-amber text-amber-fg hover:bg-amber/90">
+          <Button size="sm" className="bg-amber text-amber-fg hover:bg-amber/90" onClick={() => router.push('/manager/jobs?new=1')}>
             <Plus className="mr-1 h-3.5 w-3.5" strokeWidth={2.2} />
             Novo
           </Button>

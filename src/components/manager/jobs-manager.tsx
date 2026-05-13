@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { Plus, Search, RefreshCw, AlertTriangle } from 'lucide-react'
 import { JobsTable } from './jobs-table'
 import type { Job } from '@/types'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { addDays, addMonths } from 'date-fns'
 import { checkConflictsAction, type ConflictInfo } from '@/app/manager/jobs/actions'
 
@@ -58,7 +58,15 @@ const recurrenceConfig = {
 
 export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId }: JobsManagerProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      openNew()
+      router.replace('/manager/jobs')
+    }
+  }, [])
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Job | null>(null)
   const [form, setForm] = useState(emptyForm)
@@ -152,18 +160,26 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
   }
 
   async function handleSave() {
+    console.log('[handleSave] form.worker_ids:', form.worker_ids, 'date:', form.scheduled_date, 'time:', form.scheduled_time_start)
     // Check for conflicts before saving (non-blocking — just warn)
     if (form.worker_ids.length && form.scheduled_date && form.scheduled_time_start) {
-      const found = await checkConflictsAction({
-        workerIds: form.worker_ids,
-        scheduledDate: form.scheduled_date,
-        durationDays: form.duration_days,
-        timeStart: form.scheduled_time_start,
-        timeEnd: form.scheduled_time_end || form.scheduled_time_start,
-        excludeJobId: editing?.id,
-      })
-      setConflicts(found)
-      if (found.length) return  // show warning, don't save yet
+      try {
+        const found = await checkConflictsAction({
+          workerIds: form.worker_ids,
+          scheduledDate: form.scheduled_date,
+          durationDays: form.duration_days,
+          timeStart: form.scheduled_time_start,
+          timeEnd: form.scheduled_time_end || form.scheduled_time_start,
+          excludeJobId: editing?.id,
+        })
+        console.log('[handleSave] conflicts found:', found)
+        setConflicts(found)
+        if (found.length) return  // show warning, don't save yet
+      } catch (err) {
+        console.error('[handleSave] conflict check error:', err)
+      }
+    } else {
+      console.log('[handleSave] skipping conflict check — missing workers/date/time')
     }
     await handleSaveForced()
   }
@@ -357,7 +373,13 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
           <h1 className="text-2xl font-bold text-gray-900">Trabalhos</h1>
           <p className="text-gray-500 text-sm mt-1">{filteredJobs.length} de {jobs.length} trabalho{jobs.length !== 1 ? 's' : ''}</p>
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" /> Novo trabalho</Button>
+        <div className="flex items-center gap-2">
+          <div className="flex overflow-hidden rounded-md border border-gray-200">
+            <button className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50" onClick={() => router.push('/manager/schedule')}>Equipa</button>
+            <button className="bg-gray-900 text-white px-3 py-1.5 text-xs font-medium">Lista</button>
+          </div>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" /> Novo trabalho</Button>
+        </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
