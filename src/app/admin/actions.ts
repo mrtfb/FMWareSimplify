@@ -108,7 +108,7 @@ export async function createOrgWithManager({
 
   if (inviteError || !inviteData.user) {
     await admin.from('organizations').delete().eq('id', org.id)
-    return { error: inviteError?.message?.includes('already been registered') ? 'Email já registado.' : 'Erro ao convidar utilizador.' }
+    return { error: inviteError?.message ?? 'Erro ao convidar utilizador.' }
   }
 
   await admin.from('profiles').upsert({
