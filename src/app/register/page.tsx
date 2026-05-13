@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ClipboardList } from 'lucide-react'
+import { PasswordField, isPasswordStrong } from '@/components/shared/password-field'
 
 export default function RegisterPage() {
   const router = useRouter()
   const [form, setForm] = useState({ orgName: '', managerName: '', email: '', password: '' })
+  const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -26,8 +28,12 @@ export default function RegisterPage() {
       setError('Preencha todos os campos.')
       return
     }
-    if (form.password.length < 8) {
-      setError('A password deve ter pelo menos 8 caracteres.')
+    if (!isPasswordStrong(form.password)) {
+      setError('A password não cumpre os requisitos mínimos.')
+      return
+    }
+    if (form.password !== confirm) {
+      setError('As passwords não coincidem.')
       return
     }
     setLoading(true)
@@ -104,17 +110,30 @@ export default function RegisterPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Password *</Label>
-              <Input
-                type="password"
-                placeholder="Mínimo 8 caracteres"
+              <PasswordField
                 value={form.password}
-                onChange={e => set('password', e.target.value)}
+                onChange={v => set('password', v)}
+                showStrength
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Confirmar password *</Label>
+              <PasswordField
+                value={confirm}
+                onChange={setConfirm}
+              />
+              {confirm.length > 0 && form.password !== confirm && (
+                <p className="text-xs text-red-500">As passwords não coincidem.</p>
+              )}
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || !isPasswordStrong(form.password) || form.password !== confirm}
+            >
               {loading ? 'A criar conta...' : 'Criar conta grátis'}
             </Button>
           </form>

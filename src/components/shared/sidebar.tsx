@@ -16,6 +16,7 @@ import {
   CalendarClock,
   Settings,
   ShieldCheck,
+  KeyRound,
 } from 'lucide-react'
 
 interface NavItem {
@@ -115,6 +116,20 @@ export function Sidebar({ role, userName, orgName, orgLogo }: SidebarProps) {
 
       {/* User + settings */}
       <div className="border-t border-border p-3">
+        {role === 'worker' && (
+          <Link
+            href="/worker/settings"
+            className={cn(
+              'mb-1 flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors',
+              pathname.startsWith('/worker/settings')
+                ? 'bg-sidebar-accent text-ink'
+                : 'text-ink-2 hover:bg-sidebar-accent/60 hover:text-ink',
+            )}
+          >
+            <KeyRound className="h-[15px] w-[15px]" strokeWidth={1.5} />
+            Alterar password
+          </Link>
+        )}
         {(role === 'manager' || role === 'superadmin') && (
           <Link
             href="/manager/settings"

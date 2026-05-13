@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Users, Plus, UserCircle } from 'lucide-react'
 import type { Profile } from '@/types'
 import { useRouter } from 'next/navigation'
+import { PasswordField, isPasswordStrong } from '@/components/shared/password-field'
 
 interface WorkersTableProps {
   workers: Profile[]
@@ -21,6 +22,7 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
   const supabase = createClient()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ full_name: '', email: '', password: '' })
+  const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -28,6 +30,8 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
   const filtered = workers.filter(w => w.full_name.toLowerCase().includes(search.toLowerCase()))
 
   async function handleCreate() {
+    if (!isPasswordStrong(form.password)) { setError('A password não cumpre os requisitos mínimos.'); return }
+    if (form.password !== confirm) { setError('As passwords não coincidem.'); return }
     setLoading(true)
     setError('')
 
@@ -47,6 +51,7 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
     setLoading(false)
     setOpen(false)
     setForm({ full_name: '', email: '', password: '' })
+    setConfirm('')
     router.refresh()
   }
 
@@ -75,12 +80,20 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
               </div>
               <div className="space-y-1">
                 <Label>Password inicial *</Label>
-                <Input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Mínimo 6 caracteres" />
+                <PasswordField value={form.password} onChange={v => setForm(f => ({ ...f, password: v }))} showStrength />
               </div>
+              <div className="space-y-1">
+                <Label>Confirmar password *</Label>
+                <PasswordField value={confirm} onChange={setConfirm} />
+                {confirm.length > 0 && form.password !== confirm && (
+                  <p className="text-xs text-red-500">As passwords não coincidem.</p>
+                )}
+              </div>
+              <p className="text-xs text-gray-400">O trabalhador receberá um email com os dados de acesso.</p>
               {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
               <div className="flex gap-2 justify-end pt-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button onClick={handleCreate} disabled={loading || !form.full_name || !form.email || !form.password}>
+                <Button onClick={handleCreate} disabled={loading || !form.full_name || !form.email || !isPasswordStrong(form.password) || form.password !== confirm}>
                   {loading ? 'A criar...' : 'Criar conta'}
                 </Button>
               </div>
