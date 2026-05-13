@@ -1,3 +1,8 @@
+// handoff/src/components/shared/sidebar.tsx
+//
+// REPLACES the current src/components/shared/sidebar.tsx.
+// Light Workshop bar with ink-on-paper + amber active indicator.
+
 'use client'
 
 import Link from 'next/link'
@@ -7,90 +12,127 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
   Users,
-  Briefcase,
   CalendarDays,
   FileText,
   LogOut,
   ClipboardList,
   Building2,
+  Briefcase,
+  CalendarClock,
 } from 'lucide-react'
 
 interface NavItem {
   href: string
   label: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
 }
 
 const managerNav: NavItem[] = [
-  { href: '/manager', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/manager/clients', label: 'Clientes', icon: Building2 },
-  { href: '/manager/workers', label: 'Trabalhadores', icon: Users },
-  { href: '/manager/jobs', label: 'Trabalhos', icon: CalendarDays },
-  { href: '/manager/reports', label: 'Relatórios', icon: FileText },
+  { href: '/manager',          label: 'Hoje',         icon: LayoutDashboard },
+  { href: '/manager/jobs',     label: 'Trabalhos',    icon: Briefcase },
+  { href: '/manager/schedule', label: 'Agenda',       icon: CalendarClock },
+  { href: '/manager/clients',  label: 'Clientes',     icon: Building2 },
+  { href: '/manager/workers',  label: 'Equipa',       icon: Users },
+  { href: '/manager/reports',  label: 'Fichas',       icon: FileText },
 ]
 
 const workerNav: NavItem[] = [
-  { href: '/worker', label: 'Início', icon: LayoutDashboard },
-  { href: '/worker/jobs', label: 'Meus Trabalhos', icon: Briefcase },
-  { href: '/worker/calendar', label: 'Calendário', icon: CalendarDays },
+  { href: '/worker',          label: 'Hoje',          icon: LayoutDashboard },
+  { href: '/worker/jobs',     label: 'Trabalhos',     icon: Briefcase },
+  { href: '/worker/calendar', label: 'Calendário',    icon: CalendarDays },
 ]
 
 interface SidebarProps {
   role: 'manager' | 'worker'
   userName: string
+  orgName?: string
 }
 
-export function Sidebar({ role, userName }: SidebarProps) {
+export function Sidebar({ role, userName, orgName }: SidebarProps) {
   const pathname = usePathname()
   const nav = role === 'manager' ? managerNav : workerNav
 
   return (
-    <aside className="w-64 bg-gray-900 text-white flex flex-col min-h-screen">
-      <div className="p-5 border-b border-gray-700">
-        <div className="flex items-center gap-2">
-          <div className="bg-blue-600 p-1.5 rounded-lg">
-            <ClipboardList className="h-5 w-5" />
+    <aside className="flex w-[220px] shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
+      {/* Brand */}
+      <div className="border-b border-border px-[18px] pb-[18px] pt-5">
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-amber text-ink">
+            <ClipboardList className="h-4 w-4" strokeWidth={2.2} />
+          </span>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold tracking-tight">FichasWork</div>
+            {orgName && (
+              <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-mute">
+                {orgName}
+              </div>
+            )}
           </div>
-          <span className="font-bold text-lg">FichasWork</span>
         </div>
-        <p className="text-gray-400 text-xs mt-2 truncate">{userName}</p>
-        <span className="text-xs bg-blue-600/30 text-blue-400 px-2 py-0.5 rounded mt-1 inline-block capitalize">
-          {role === 'manager' ? 'Gestor' : 'Trabalhador'}
-        </span>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      {/* Nav */}
+      <nav className="flex flex-1 flex-col gap-px p-[10px]">
         {nav.map(item => {
           const Icon = item.icon
-          const active = pathname === item.href || (item.href !== '/manager' && item.href !== '/worker' && pathname.startsWith(item.href))
+          const active =
+            pathname === item.href ||
+            (item.href !== '/manager' &&
+              item.href !== '/worker' &&
+              pathname.startsWith(item.href))
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                'group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors',
                 active
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  ? 'bg-sidebar-accent text-ink'
+                  : 'text-ink-2 hover:bg-sidebar-accent/60 hover:text-ink',
               )}
             >
-              <Icon className="h-4 w-4" />
+              {active && (
+                <span
+                  aria-hidden
+                  className="absolute -left-[10px] top-1.5 bottom-1.5 w-[2px] rounded-sm bg-amber"
+                />
+              )}
+              <Icon
+                className={cn('h-[15px] w-[15px]', active && 'text-ink')}
+                strokeWidth={active ? 2 : 1.5}
+              />
               {item.label}
             </Link>
           )
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-700">
-        <form action={signOut}>
-          <button
-            type="submit"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors w-full"
-          >
-            <LogOut className="h-4 w-4" />
-            Sair
-          </button>
-        </form>
+      {/* User */}
+      <div className="border-t border-border p-3">
+        <div className="flex items-center gap-2.5 px-1.5 py-1.5">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-soft font-mono text-[11px] font-semibold text-ink">
+            {userName
+              .split(/\s+/)
+              .slice(0, 2)
+              .map(p => p[0]?.toUpperCase())
+              .join('')}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-xs font-medium">{userName}</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.04em] text-mute">
+              {role === 'manager' ? 'GESTOR' : 'TÉCNICO'}
+            </div>
+          </div>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="text-mute transition-colors hover:text-ink"
+              aria-label="Sair"
+            >
+              <LogOut className="h-[14px] w-[14px]" />
+            </button>
+          </form>
+        </div>
       </div>
     </aside>
   )

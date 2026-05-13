@@ -17,7 +17,7 @@ export default async function ManagerLayout({ children }: { children: React.Reac
   if (!profile || profile.role !== 'manager') redirect('/worker')
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-background">
       <Sidebar role="manager" userName={profile.full_name} />
       <main className="flex-1 overflow-auto">
         {children}

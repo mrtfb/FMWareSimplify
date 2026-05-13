@@ -1,3 +1,12 @@
+/* ============================================================
+ * Workshop — Tailwind v4 / shadcn token override for globals.css
+ *
+ * Replace the contents of src/app/globals.css with this file.
+ * Keeps the same token names (so all shadcn components keep working)
+ * but flips the palette to warm-paper + ink + amber action color,
+ * and adds new status hue tokens used by the new <WStatus/> dot.
+ * ============================================================ */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -8,8 +17,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-mono);
   --font-heading: var(--font-sans);
+
+  /* shadcn-compatible tokens (kept) */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,82 +50,143 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* NEW — Workshop status + neutral scale (consumed by <WStatus/>, etc.) */
+  --color-paper: var(--paper);
+  --color-raise: var(--raise);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-mute: var(--mute);
+  --color-faint: var(--faint);
+  --color-line-2: var(--line-2);
+  --color-amber: var(--amber);
+  --color-amber-fg: var(--amber-fg);
+  --color-amber-soft: var(--amber-soft);
+  --color-s-pending: var(--s-pending);
+  --color-s-in-progress: var(--s-in-progress);
+  --color-s-completed: var(--s-completed);
+  --color-s-cancelled: var(--s-cancelled);
+  --color-s-blocked: var(--s-blocked);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* ─── Workshop · light (warm paper + ink) ───────────────── */
+  --background: oklch(0.985 0.005 80);     /* warm off-white page */
+  --foreground: oklch(0.18 0.01 80);       /* warm near-black ink */
+  --paper:      oklch(1 0 0);              /* card surface */
+  --raise:      oklch(0.975 0.006 80);     /* subtle recessed surface (table head) */
+  --ink:        oklch(0.18 0.01 80);
+  --ink-2:      oklch(0.38 0.01 80);
+  --mute:       oklch(0.55 0.01 80);
+  --faint:      oklch(0.72 0.008 80);
+
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: var(--foreground);
+
+  /* Primary = amber action color (work-jacket / safety-vest energy). */
+  --primary:            oklch(0.68 0.17 55);
+  --primary-foreground: oklch(0.22 0.05 50);
+  --amber:              oklch(0.68 0.17 55);
+  --amber-fg:           oklch(0.32 0.10 50);
+  --amber-soft:         oklch(0.94 0.04 65);
+
+  --secondary:            oklch(0.975 0.006 80);
+  --secondary-foreground: var(--foreground);
+  --muted:                oklch(0.965 0.006 80);
+  --muted-foreground:     var(--mute);
+  --accent:               oklch(0.965 0.006 80);
+  --accent-foreground:    var(--foreground);
+
+  --destructive: oklch(0.58 0.18 25);
+
+  --border: oklch(0.91 0.006 80);
+  --line-2: oklch(0.86 0.008 80);
+  --input:  oklch(0.91 0.006 80);
+  --ring:   oklch(0.68 0.17 55);
+
+  /* Status hues — shared chroma, varied hue */
+  --s-pending:     oklch(0.72 0.14 75);
+  --s-in-progress: oklch(0.60 0.14 245);
+  --s-completed:   oklch(0.58 0.13 145);
+  --s-cancelled:   oklch(0.60 0.01 80);
+  --s-blocked:     oklch(0.58 0.18 25);
+
+  --chart-1: oklch(0.68 0.17 55);   /* amber */
+  --chart-2: oklch(0.60 0.14 245);  /* blue */
+  --chart-3: oklch(0.58 0.13 145);  /* green */
+  --chart-4: oklch(0.55 0.01 80);   /* mute */
+  --chart-5: oklch(0.38 0.01 80);   /* ink-2 */
+
+  --radius: 0.5rem;                 /* tighter than shadcn default */
+
+  /* Sidebar — light Workshop bar (not the old dark gray) */
+  --sidebar:                       oklch(0.985 0.005 80);
+  --sidebar-foreground:            var(--ink);
+  --sidebar-primary:               var(--amber);
+  --sidebar-primary-foreground:    var(--ink);
+  --sidebar-accent:                var(--amber-soft);
+  --sidebar-accent-foreground:     var(--ink);
+  --sidebar-border:                var(--border);
+  --sidebar-ring:                  var(--amber);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --background: oklch(0.16 0.01 80);
+  --foreground: oklch(0.96 0.005 80);
+  --paper:      oklch(0.20 0.01 80);
+  --raise:      oklch(0.22 0.01 80);
+  --ink:        oklch(0.96 0.005 80);
+  --ink-2:      oklch(0.78 0.008 80);
+  --mute:       oklch(0.62 0.008 80);
+  --faint:      oklch(0.48 0.008 80);
+
+  --card: oklch(0.20 0.01 80);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.22 0.01 80);
+  --popover-foreground: var(--foreground);
+
+  --primary:            oklch(0.72 0.17 55);
+  --primary-foreground: oklch(0.20 0.04 50);
+  --amber:              oklch(0.72 0.17 55);
+  --amber-fg:           oklch(0.92 0.06 65);
+  --amber-soft:         oklch(0.28 0.06 55);
+
+  --secondary:            oklch(0.24 0.01 80);
+  --secondary-foreground: var(--foreground);
+  --muted:                oklch(0.24 0.01 80);
+  --muted-foreground:     var(--mute);
+  --accent:               oklch(0.24 0.01 80);
+  --accent-foreground:    var(--foreground);
+
+  --destructive: oklch(0.66 0.18 25);
+
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --line-2: oklch(1 0 0 / 16%);
+  --input:  oklch(1 0 0 / 15%);
+  --ring:   var(--amber);
+
+  --s-pending:     oklch(0.78 0.14 75);
+  --s-in-progress: oklch(0.70 0.14 245);
+  --s-completed:   oklch(0.70 0.13 145);
+  --s-cancelled:   oklch(0.60 0.01 80);
+  --s-blocked:     oklch(0.68 0.18 25);
+
+  --sidebar:                       oklch(0.18 0.01 80);
+  --sidebar-foreground:            var(--ink);
+  --sidebar-primary:               var(--amber);
+  --sidebar-primary-foreground:    oklch(0.20 0.04 50);
+  --sidebar-accent:                oklch(0.24 0.01 80);
+  --sidebar-accent-foreground:     var(--foreground);
+  --sidebar-border:                oklch(1 0 0 / 8%);
+  --sidebar-ring:                  var(--amber);
 }
 
 @layer base {
@@ -123,8 +195,17 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11";
   }
   html {
     @apply font-sans;
+  }
+
+  /* Numeric data uses Geist Mono — apply to anything tagged data-num,
+     plus tabular figures by default for time/code-y bits. */
+  [data-num], .font-mono, time, code, kbd, samp, pre {
+    font-family: var(--font-mono);
+    font-feature-settings: "tnum", "ss01";
+    letter-spacing: 0.01em;
   }
 }

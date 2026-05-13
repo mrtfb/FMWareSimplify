@@ -1,147 +1,291 @@
+// handoff/src/app/manager/page.tsx
+//
+// REPLACES src/app/manager/page.tsx — Workshop dashboard.
+// Operational tiles ("what blocks me today") + today's timeline +
+// attention alerts + team status, instead of generic stat tiles.
+
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Building2, Users, CalendarDays, ClipboardList, Clock, TrendingUp, AlertCircle } from 'lucide-react'
+import { Eyebrow, WStatus, StatusDot, type JobStatus } from '@/components/shared/status'
+import { WAvatar, WAvatarStack } from '@/components/shared/avatar'
+import { Button } from '@/components/ui/button'
+import { Plus, Search, Bell } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { pt as ptPT } from 'date-fns/locale'
 
 export default async function ManagerDashboard() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user!.id).single()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, organization_id')
+    .eq('id', user!.id)
+    .single()
   const orgId = profile?.organization_id
 
-  const today = new Date().toISOString().split('T')[0]
-  const firstOfMonth = today.slice(0, 7) + '-01'
+  const today = new Date()
+  const todayISO = format(today, 'yyyy-MM-dd')
 
+  // Pull what the dashboard actually needs to make decisions today.
   const [
-    { count: clientCount },
-    { count: workerCount },
-    { count: jobsTodayCount },
-    { count: inProgressCount },
-    { data: orgJobs },
-    { data: recentJobs },
-    { data: jobWorkers },
+    { data: todayJobs },
+    { data: inProgress },
+    { data: missingFichas },
+    { data: workers },
   ] = await Promise.all([
-    supabase.from('clients').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('role', 'worker'),
-    supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('scheduled_date', today),
-    supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'in_progress'),
-    supabase.from('jobs').select('id').eq('organization_id', orgId),
-    supabase.from('jobs')
-      .select('*, client:clients(name)')
+    supabase
+      .from('jobs')
+      .select('*, client:clients(name), workers:job_workers(worker:profiles(id, full_name))')
       .eq('organization_id', orgId)
-      .neq('status', 'completed')
-      .neq('status', 'cancelled')
-      .order('scheduled_date', { ascending: true })
+      .eq('scheduled_date', todayISO)
+      .order('scheduled_time_start', { ascending: true }),
+
+    supabase
+      .from('jobs')
+      .select('id, status')
+      .eq('organization_id', orgId)
+      .eq('status', 'in_progress'),
+
+    // Stub: jobs in_progress that don't have a daily report for yesterday.
+    // Swap for your actual query.
+    supabase
+      .from('jobs')
+      .select('id, title, scheduled_date, worker:profiles(full_name)')
+      .eq('organization_id', orgId)
+      .eq('status', 'in_progress')
+      .limit(3),
+
+    supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('organization_id', orgId)
+      .eq('role', 'worker')
       .limit(6),
-    supabase.from('job_workers').select('job_id, worker_id, worker:profiles(full_name)'),
   ])
 
-  const orgJobIds = orgJobs?.map(j => j.id) ?? []
-
-  const [{ count: fichasMonthCount }, { data: hoursData }] = await Promise.all([
-    orgJobIds.length > 0
-      ? supabase.from('daily_reports').select('*', { count: 'exact', head: true }).in('job_id', orgJobIds).gte('report_date', firstOfMonth)
-      : Promise.resolve({ count: 0, data: null, error: null }),
-    orgJobIds.length > 0
-      ? supabase.from('daily_reports').select('hours_worked').in('job_id', orgJobIds).gte('report_date', firstOfMonth)
-      : Promise.resolve({ count: null, data: [], error: null }),
-  ])
-
-  const hoursThisMonth = (hoursData ?? []).reduce((sum, r) => sum + (r.hours_worked ?? 0), 0)
-
-  const workersByJob: Record<string, string[]> = {}
-  jobWorkers?.forEach(jw => {
-    if (!workersByJob[jw.job_id]) workersByJob[jw.job_id] = []
-    const name = (jw.worker as unknown as { full_name: string } | null)?.full_name
-    if (name) workersByJob[jw.job_id].push(name)
-  })
-
-  const statusConfig = {
-    pending: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
-    in_progress: { label: 'Em curso', color: 'bg-blue-100 text-blue-800' },
-    completed: { label: 'Concluído', color: 'bg-green-100 text-green-800' },
-    cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
+  type JobRow = {
+    id: string
+    title: string
+    status: JobStatus
+    location: string | null
+    scheduled_time_start: string | null
+    scheduled_time_end: string | null
+    client: { name: string } | null
+    workers: { worker: { id: string; full_name: string } | null }[]
   }
 
-  const stats = [
-    { label: 'Clientes', value: clientCount ?? 0, icon: Building2, href: '/manager/clients', color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Trabalhadores', value: workerCount ?? 0, icon: Users, href: '/manager/workers', color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Trabalhos hoje', value: jobsTodayCount ?? 0, icon: CalendarDays, href: '/manager/jobs', color: 'text-purple-600', bg: 'bg-purple-50' },
-    { label: 'Em curso', value: inProgressCount ?? 0, icon: AlertCircle, href: '/manager/jobs', color: 'text-orange-600', bg: 'bg-orange-50' },
-    { label: 'Fichas este mês', value: fichasMonthCount ?? 0, icon: ClipboardList, href: '/manager/reports', color: 'text-pink-600', bg: 'bg-pink-50' },
-    { label: 'Horas este mês', value: `${hoursThisMonth.toFixed(0)}h`, icon: TrendingUp, href: '/manager/reports', color: 'text-teal-600', bg: 'bg-teal-50' },
-  ]
+  const jobs: JobRow[] = (todayJobs ?? []) as never
+  const pendingToday = jobs.filter(j => j.status === 'pending').length
+  const fichasMissing = (missingFichas ?? []).length
 
   return (
-    <div className="p-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">Visão geral da sua equipa</p>
+    <div className="space-y-7 p-8">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Eyebrow>{format(today, "EEEE · d 'de' MMMM yyyy", { locale: ptPT })}</Eyebrow>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+            Bom dia, {profile?.full_name?.split(' ')[0] ?? 'Carlos'}.
+          </h1>
+          <p className="mt-1 text-sm text-ink-2">
+            {jobs.length} trabalho{jobs.length === 1 ? '' : 's'} hoje ·{' '}
+            {(inProgress ?? []).length} em curso agora
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <Search className="mr-1.5 h-3.5 w-3.5" />
+            Procurar
+          </Button>
+          <Link href="/manager/jobs?new=1" className="inline-flex items-center gap-1.5 rounded-md bg-amber px-3 py-1.5 text-sm font-medium text-amber-fg hover:bg-amber/90 transition-colors">
+            <Plus className="h-3.5 w-3.5" />
+            Novo trabalho
+          </Link>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        {stats.map(stat => {
-          const Icon = stat.icon
-          return (
-            <Link key={stat.label} href={stat.href}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardContent className="p-5 flex items-center gap-4">
-                  <div className={`${stat.color} ${stat.bg} p-3 rounded-xl shrink-0`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                    <p className="text-sm text-gray-500 leading-tight">{stat.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          )
-        })}
+      {/* Operational tiles — what NEEDS attention today */}
+      <div className="grid grid-cols-4 divide-x divide-border rounded-xl border border-border bg-card">
+        <OpTile
+          label="A decorrer agora"
+          value={(inProgress ?? []).length}
+          sub="técnicos no terreno"
+          status="in_progress"
+        />
+        <OpTile
+          label="A começar até às 12:00"
+          value={pendingToday}
+          sub="precisa de despacho"
+          status="pending"
+        />
+        <OpTile
+          label="Fichas em falta"
+          value={fichasMissing}
+          sub="ontem · precisa de seguimento"
+          urgent
+        />
+        <OpTile label="Para faturar esta semana" value="€4 250" sub="8 trabalhos concluídos" />
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-base">Trabalhos activos</CardTitle>
-          <Link href="/manager/jobs" className="text-sm text-blue-600 hover:underline">Ver todos</Link>
-        </CardHeader>
-        <CardContent>
-          {recentJobs && recentJobs.length > 0 ? (
-            <div className="space-y-2">
-              {recentJobs.map(job => {
-                const st = statusConfig[job.status as keyof typeof statusConfig]
-                const workers = workersByJob[job.id] ?? []
-                return (
-                  <Link key={job.id} href={`/manager/jobs/${job.id}`} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="text-center min-w-[44px] shrink-0">
-                        {job.scheduled_date ? (
-                          <>
-                            <p className="text-xs text-gray-500 capitalize">{format(new Date(job.scheduled_date + 'T12:00:00'), 'MMM', { locale: ptBR })}</p>
-                            <p className="text-lg font-bold leading-none">{format(new Date(job.scheduled_date + 'T12:00:00'), 'd')}</p>
-                          </>
-                        ) : <Clock className="h-5 w-5 text-gray-400 mx-auto" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{job.title}</p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {(job.client as { name: string } | null)?.name ?? '—'}
-                          {workers.length > 0 && ` · ${workers.join(', ')}`}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 ${st.color}`}>{st.label}</span>
-                  </Link>
-                )
-              })}
+      {/* Two-column: timeline + side rail */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+        {/* Today timeline */}
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <header className="flex items-center justify-between border-b border-border px-5 py-3.5">
+            <div>
+              <Eyebrow>Hoje</Eyebrow>
+              <div className="mt-0.5 text-[15px] font-semibold">Trabalhos em curso</div>
             </div>
-          ) : (
-            <p className="text-gray-400 text-sm text-center py-6">Nenhum trabalho activo</p>
-          )}
-        </CardContent>
-      </Card>
+            <Link
+              href="/manager/schedule"
+              className="text-xs text-ink-2 underline decoration-line-2 underline-offset-2 hover:text-ink"
+            >
+              Ver agenda
+            </Link>
+          </header>
+          <div>
+            {jobs.length === 0 ? (
+              <div className="px-5 py-10 text-center text-sm text-mute">Sem trabalhos hoje</div>
+            ) : (
+              jobs.map((j, i) => <TimelineRow key={j.id} job={j} last={i === jobs.length - 1} />)
+            )}
+          </div>
+        </section>
+
+        {/* Right rail */}
+        <div className="space-y-4">
+          <section className="rounded-xl border border-border bg-card p-5">
+            <Eyebrow>Precisa de atenção</Eyebrow>
+            <div className="mt-3 space-y-3">
+              {(missingFichas ?? []).map(m => (
+                <AlertRow
+                  key={m.id}
+                  title={`Sem ficha diária: ${m.title.slice(0, 38)}`}
+                  sub="Notifica o técnico"
+                  cta="Notificar"
+                />
+              ))}
+              {(missingFichas ?? []).length === 0 && (
+                <div className="text-sm text-mute">Tudo em dia. 👌</div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border bg-card p-5">
+            <Eyebrow>Equipa</Eyebrow>
+            <div className="mt-3 space-y-2.5">
+              {(workers ?? []).map(w => (
+                <div key={w.id} className="flex items-center gap-2.5">
+                  <WAvatar id={w.id} name={w.full_name} size={26} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-medium">{w.full_name}</div>
+                    <div className="flex items-center gap-1.5 truncate text-[11px] text-mute">
+                      <StatusDot status="pending" size={6} />
+                      Próximo às 09:00
+                    </div>
+                  </div>
+                  <div className="font-mono text-[11px] text-mute">·</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Atoms ──────────────────────────────────────────────────────────
+
+function OpTile({
+  label,
+  value,
+  sub,
+  status,
+  urgent,
+}: {
+  label: string
+  value: number | string
+  sub: string
+  status?: JobStatus
+  urgent?: boolean
+}) {
+  return (
+    <div className="px-5 py-4">
+      <div className="mb-2 flex items-center gap-1.5">
+        {status ? <StatusDot status={status} size={6} /> : <span className="h-1.5 w-1.5 rounded-full bg-amber" />}
+        <span className="text-[11px] text-ink-2">{label}</span>
+      </div>
+      <div
+        data-num
+        className={
+          'font-mono text-3xl font-semibold leading-none tracking-tight ' +
+          (urgent ? 'text-amber-fg' : 'text-ink')
+        }
+      >
+        {value}
+      </div>
+      <div className="mt-1.5 text-xs text-mute">{sub}</div>
+    </div>
+  )
+}
+
+function TimelineRow({
+  job,
+  last,
+}: {
+  job: {
+    id: string
+    title: string
+    status: JobStatus
+    location: string | null
+    scheduled_time_start: string | null
+    scheduled_time_end: string | null
+    client: { name: string } | null
+    workers: { worker: { id: string; full_name: string } | null }[]
+  }
+  last: boolean
+}) {
+  const people = job.workers.map(jw => jw.worker).filter(Boolean) as { id: string; full_name: string }[]
+  return (
+    <Link
+      href={`/manager/jobs/${job.id}`}
+      className={
+        'grid grid-cols-[64px_1fr_auto] items-center gap-4 px-5 py-3.5 transition-colors hover:bg-raise ' +
+        (last ? '' : 'border-b border-border')
+      }
+    >
+      <div className="font-mono text-[13px] text-ink-2">
+        <div>{job.scheduled_time_start?.slice(0, 5) ?? '—'}</div>
+        <div className="text-[11px] text-faint">{job.scheduled_time_end?.slice(0, 5) ?? ''}</div>
+      </div>
+      <div className="min-w-0">
+        <div className="mb-1 flex items-center gap-2">
+          <WStatus status={job.status} />
+        </div>
+        <div className="truncate text-[14px] font-medium tracking-tight">{job.title}</div>
+        <div className="mt-0.5 truncate text-xs text-mute">
+          {job.client?.name ?? '—'} · {job.location?.split(',')[0] ?? ''}
+        </div>
+      </div>
+      <WAvatarStack people={people.map(p => ({ id: p.id, name: p.full_name }))} size={24} />
+    </Link>
+  )
+}
+
+function AlertRow({ title, sub, cta }: { title: string; sub: string; cta: string }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber" />
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] font-medium">{title}</div>
+        <div className="mt-0.5 text-[11px] text-mute">{sub}</div>
+      </div>
+      <button className="rounded-md border border-line-2 px-2.5 py-1 text-[11px] font-medium text-ink hover:bg-raise">
+        {cta}
+      </button>
     </div>
   )
 }
