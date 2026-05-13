@@ -27,13 +27,14 @@ export default async function ManagerDashboard() {
 
   const today = new Date()
   const todayISO = format(today, 'yyyy-MM-dd')
+  const monthStart = format(new Date(today.getFullYear(), today.getMonth(), 1), 'yyyy-MM-dd')
 
-  // Pull what the dashboard actually needs to make decisions today.
   const [
     { data: todayJobs },
     { data: inProgress },
     { data: missingFichas },
     { data: workers },
+    { count: completedThisMonth },
   ] = await Promise.all([
     supabase
       .from('jobs')
@@ -48,8 +49,6 @@ export default async function ManagerDashboard() {
       .eq('organization_id', orgId)
       .eq('status', 'in_progress'),
 
-    // Stub: jobs in_progress that don't have a daily report for yesterday.
-    // Swap for your actual query.
     supabase
       .from('jobs')
       .select('id, title, scheduled_date, worker:profiles(full_name)')
@@ -63,6 +62,13 @@ export default async function ManagerDashboard() {
       .eq('organization_id', orgId)
       .in('role', ['worker', 'manager'])
       .limit(6),
+
+    supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('status', 'completed')
+      .gte('scheduled_date', monthStart),
   ])
 
   type JobRow = {
@@ -126,7 +132,11 @@ export default async function ManagerDashboard() {
           sub="ontem · precisa de seguimento"
           urgent
         />
-        <OpTile label="Para faturar esta semana" value="€4 250" sub="8 trabalhos concluídos" />
+        <OpTile
+          label="Concluídos este mês"
+          value={completedThisMonth ?? 0}
+          sub={format(today, 'MMMM yyyy', { locale: ptPT })}
+        />
       </div>
 
       {/* Two-column: timeline + side rail */}
