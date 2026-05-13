@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Building2, Plus, Phone, Mail, MapPin, Pencil, Trash2 } from 'lucide-react'
 import type { Client } from '@/types'
 import { useRouter } from 'next/navigation'
+import { clientColor } from '@/lib/client-color'
 
 interface ClientsTableProps {
   clients: Client[]
@@ -136,7 +137,8 @@ export function ClientsTable({ clients, organizationId }: ClientsTableProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(client => (
-            <Card key={client.id} className="hover:shadow-md transition-shadow">
+            <Card key={client.id} className="hover:shadow-md transition-shadow overflow-hidden">
+              <div className="h-1.5 w-full" style={{ backgroundColor: clientColor(client.id).bar }} />
               <CardHeader className="pb-2 flex flex-row items-start justify-between">
                 <div>
                   <CardTitle className="text-base">{client.name}</CardTitle>

@@ -14,7 +14,7 @@
 
 'use client'
 
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { addDays, format, startOfWeek } from 'date-fns'
 import { pt as ptPT } from 'date-fns/locale'
@@ -23,6 +23,7 @@ import { Eyebrow, StatusDot, type JobStatus } from '@/components/shared/status'
 import { WAvatar } from '@/components/shared/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { clientColor } from '@/lib/client-color'
 
 interface JobOnSchedule {
   id: string
@@ -57,25 +58,12 @@ function timeToFrac(t: string | null): number {
   return Math.max(0, Math.min(DAY_END - DAY_START, h + m / 60 - DAY_START))
 }
 
-// Derive a deterministic hue from any string (client ID).
-function hueFromId(id: string): number {
-  let h = 0
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
-  // Spread across 360° but skip the amber/yellow band (50-80°) reserved for the UI chrome.
-  const raw = h % 300
-  return raw < 50 ? raw : raw + 30
-}
-
-function jobColors(job: JobOnSchedule): { bg: string; bar: string; text: string } {
+function jobTileStyle(job: JobOnSchedule): React.CSSProperties {
   if (job.status === 'cancelled') {
-    return { bg: 'bg-[oklch(0.95_0.005_80)]', bar: 'border-l-[oklch(0.7_0.005_80)]', text: 'text-mute' }
+    return { backgroundColor: 'oklch(0.95 0.005 80)', borderLeftColor: 'oklch(0.7 0.005 80)' }
   }
-  const hue = job.client_id ? hueFromId(job.client_id) : 200
-  return {
-    bg:   `bg-[oklch(0.93_0.06_${hue})]`,
-    bar:  `border-l-[oklch(0.55_0.15_${hue})]`,
-    text: `text-[oklch(0.30_0.09_${hue})]`,
-  }
+  const c = clientColor(job.client_id)
+  return { backgroundColor: c.bg, borderLeftColor: c.bar, color: c.text }
 }
 
 export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
@@ -242,24 +230,21 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
                           timeToFrac(j.scheduled_time_end ?? j.scheduled_time_start)) /
                           (DAY_END - DAY_START)) *
                         100
-                      const s = jobColors(j)
                       return (
                         <Link
                           key={j.id}
                           href={`/manager/jobs/${j.id}`}
                           className={cn(
                             'absolute inset-y-1.5 overflow-hidden rounded border-l-2 px-2 py-1 transition-shadow hover:shadow-sm',
-                            s.bg,
-                            s.bar,
                             j.status === 'cancelled' && 'line-through opacity-70',
                           )}
-                          style={{ left: `${left}%`, right: `${right}%` }}
+                          style={{ ...jobTileStyle(j), left: `${left}%`, right: `${right}%` }}
                           title={`${j.title} · ${j.scheduled_time_start?.slice(0, 5)}–${j.scheduled_time_end?.slice(0, 5)}`}
                         >
-                          <div className={cn('truncate text-[11px] font-medium leading-tight', s.text)}>
+                          <div className="truncate text-[11px] font-medium leading-tight">
                             {j.title}
                           </div>
-                          <div className={cn('mt-0.5 font-mono text-[9px] tracking-wide opacity-70', s.text)}>
+                          <div className="mt-0.5 font-mono text-[9px] tracking-wide opacity-70">
                             {j.scheduled_time_start?.slice(0, 5)}–{j.scheduled_time_end?.slice(0, 5)} ·{' '}
                             {(j.client?.name ?? '—').slice(0, 18)}
                           </div>
