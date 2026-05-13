@@ -17,7 +17,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
 import { WStatus } from '@/components/shared/status'
-import { checkWorkerConflicts, type ConflictInfo } from '@/lib/check-conflicts'
+import { checkConflictsAction, type ConflictInfo } from '@/app/manager/jobs/actions'
 
 interface JobDetailProps {
   job: Job & { client?: unknown }
@@ -73,7 +73,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
 
   async function handleSave(force = false) {
     if (!force && form.worker_ids.length && form.scheduled_date && form.scheduled_time_start) {
-      const found = await checkWorkerConflicts(supabase, {
+      const found = await checkConflictsAction({
         workerIds: form.worker_ids,
         scheduledDate: form.scheduled_date,
         durationDays: form.duration_days,

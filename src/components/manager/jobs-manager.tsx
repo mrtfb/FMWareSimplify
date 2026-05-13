@@ -13,7 +13,7 @@ import { JobsTable } from './jobs-table'
 import type { Job } from '@/types'
 import { useRouter } from 'next/navigation'
 import { addDays, addMonths } from 'date-fns'
-import { checkWorkerConflicts, type ConflictInfo } from '@/lib/check-conflicts'
+import { checkConflictsAction, type ConflictInfo } from '@/app/manager/jobs/actions'
 
 interface JobWorkerRow {
   job_id: string
@@ -154,7 +154,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
   async function handleSave() {
     // Check for conflicts before saving (non-blocking — just warn)
     if (form.worker_ids.length && form.scheduled_date && form.scheduled_time_start) {
-      const found = await checkWorkerConflicts(supabase, {
+      const found = await checkConflictsAction({
         workerIds: form.worker_ids,
         scheduledDate: form.scheduled_date,
         durationDays: form.duration_days,
