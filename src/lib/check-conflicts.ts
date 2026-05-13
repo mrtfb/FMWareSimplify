@@ -32,22 +32,29 @@ export async function checkWorkerConflicts(
     'yyyy-MM-dd'
   )
 
-  // Fetch all jobs assigned to any of these workers that overlap the date range.
-  const { data: rows } = await supabase
+  // Step 1: get job_ids assigned to these workers, with worker names.
+  const { data: jwRows } = await supabase
     .from('job_workers')
-    .select('worker_id, worker:profiles(full_name), job:jobs(id, title, scheduled_date, duration_days, scheduled_time_start, scheduled_time_end, status)')
+    .select('job_id, worker_id, worker:profiles(full_name)')
     .in('worker_id', workerIds)
 
-  if (!rows) return []
+  if (!jwRows?.length) return []
+
+  // Step 2: fetch those jobs.
+  const jobIds = [...new Set(jwRows.map(r => r.job_id as string))]
+  const { data: jobs } = await supabase
+    .from('jobs')
+    .select('id, title, scheduled_date, duration_days, scheduled_time_start, scheduled_time_end, status')
+    .in('id', jobIds)
+
+  if (!jobs?.length) return []
+
+  const jobMap = new Map(jobs.map(j => [j.id, j]))
 
   const conflicts: ConflictInfo[] = []
 
-  for (const row of rows) {
-    const j = row.job as unknown as {
-      id: string; title: string; scheduled_date: string | null
-      duration_days: number | null; scheduled_time_start: string | null
-      scheduled_time_end: string | null; status: string
-    } | null
+  for (const jw of jwRows) {
+    const j = jobMap.get(jw.job_id as string)
     if (!j || !j.scheduled_date) continue
     if (j.id === excludeJobId) continue
     if (j.status === 'cancelled') continue
@@ -60,12 +67,14 @@ export async function checkWorkerConflicts(
     // Date ranges overlap?
     if (j.scheduled_date > endDate || jEnd < scheduledDate) continue
 
-    // Time ranges overlap on the overlapping days?
-    const jTimeStart = j.scheduled_time_start ?? '00:00'
-    const jTimeEnd   = j.scheduled_time_end   ?? '23:59'
-    if (timeStart >= jTimeEnd || timeEnd <= jTimeStart) continue
+    // Time ranges overlap?
+    const jTimeStart = (j.scheduled_time_start ?? '00:00').slice(0, 5)
+    const jTimeEnd   = (j.scheduled_time_end   ?? '23:59').slice(0, 5)
+    const tStart     = timeStart.slice(0, 5)
+    const tEnd       = timeEnd.slice(0, 5)
+    if (tStart >= jTimeEnd || tEnd <= jTimeStart) continue
 
-    const workerName = (row.worker as unknown as { full_name: string } | null)?.full_name ?? 'Técnico'
+    const workerName = (jw.worker as unknown as { full_name: string } | null)?.full_name ?? 'Técnico'
     conflicts.push({ workerName, jobTitle: j.title, date: j.scheduled_date })
   }
 
