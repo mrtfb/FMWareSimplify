@@ -16,6 +16,7 @@ import {
   Briefcase,
   CalendarClock,
   Settings,
+  ShieldCheck,
 } from 'lucide-react'
 
 interface NavItem {
@@ -40,7 +41,7 @@ const workerNav: NavItem[] = [
 ]
 
 interface SidebarProps {
-  role: 'manager' | 'worker'
+  role: 'manager' | 'worker' | 'superadmin'
   userName: string
   orgName?: string
   orgLogo?: string | null
@@ -48,7 +49,7 @@ interface SidebarProps {
 
 export function Sidebar({ role, userName, orgName, orgLogo }: SidebarProps) {
   const pathname = usePathname()
-  const nav = role === 'manager' ? managerNav : workerNav
+  const nav = (role === 'manager' || role === 'superadmin') ? managerNav : workerNav
 
   return (
     <aside className="flex w-[220px] shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
@@ -119,7 +120,7 @@ export function Sidebar({ role, userName, orgName, orgLogo }: SidebarProps) {
 
       {/* User + settings */}
       <div className="border-t border-border p-3">
-        {role === 'manager' && (
+        {(role === 'manager' || role === 'superadmin') && (
           <Link
             href="/manager/settings"
             className={cn(
@@ -131,6 +132,15 @@ export function Sidebar({ role, userName, orgName, orgLogo }: SidebarProps) {
           >
             <Settings className="h-[15px] w-[15px]" strokeWidth={1.5} />
             Definições
+          </Link>
+        )}
+        {role === 'superadmin' && (
+          <Link
+            href="/admin"
+            className="mb-1 flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium text-ink-2 transition-colors hover:bg-sidebar-accent/60 hover:text-ink"
+          >
+            <ShieldCheck className="h-[15px] w-[15px]" strokeWidth={1.5} />
+            Admin
           </Link>
         )}
         <div className="flex items-center gap-2.5 px-1.5 py-1.5">
