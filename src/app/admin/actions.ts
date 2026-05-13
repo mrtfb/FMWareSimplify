@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { sendEmail } from '@/lib/email'
 
 export async function setOrgStatus(orgId: string, status: 'active' | 'suspended') {
   const admin = createAdminClient()
@@ -42,11 +43,36 @@ export async function updateOrg({
   if (orgError) return { error: 'Erro ao atualizar organização.' }
 
   if (managerId) {
-    if (managerEmail.trim()) {
+    const newEmail = managerEmail.trim().toLowerCase()
+
+    if (newEmail) {
+      const { data: currentUser } = await admin.auth.admin.getUserById(managerId)
+      const emailChanged = currentUser?.user?.email !== newEmail
+
       const { error: emailError } = await admin.auth.admin.updateUserById(managerId, {
-        email: managerEmail.trim().toLowerCase(),
+        email: newEmail,
       })
       if (emailError) return { error: `Erro ao atualizar email: ${emailError.message}` }
+
+      if (emailChanged) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fmware.app'
+        const { data: linkData } = await admin.auth.admin.generateLink({
+          type: 'recovery',
+          email: newEmail,
+        })
+        const resetLink = linkData?.properties?.action_link ?? `${appUrl}/auth/login`
+
+        await sendEmail({
+          to: newEmail,
+          subject: 'FichasWork — Acesso à sua conta atualizado',
+          html: emailChangedHtml({
+            name: managerName.trim() || 'Gestor',
+            email: newEmail,
+            resetLink,
+            appUrl,
+          }),
+        })
+      }
     }
 
     if (managerName.trim()) {
@@ -56,6 +82,36 @@ export async function updateOrg({
 
   revalidatePath('/admin')
   return {}
+}
+
+function emailChangedHtml({
+  name,
+  email,
+  resetLink,
+  appUrl,
+}: {
+  name: string
+  email: string
+  resetLink: string
+  appUrl: string
+}) {
+  return `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
+      <h2 style="color:#1d4ed8;margin-bottom:4px">Acesso à sua conta FichasWork</h2>
+      <p style="color:#6b7280;margin-top:0">Olá ${name}, os dados de acesso da sua conta foram atualizados.</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:24px 0">
+        <p style="margin:0 0 8px"><strong>Email:</strong> ${email}</p>
+      </div>
+      <p style="color:#374151">Para definir a sua password e aceder à plataforma, clique no botão abaixo:</p>
+      <a href="${resetLink}"
+        style="display:inline-block;background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;margin-top:8px">
+        Definir password
+      </a>
+      <p style="color:#9ca3af;font-size:12px;margin-top:32px">
+        Este link expira em 24 horas. Se não estava à espera deste email, pode ignorá-lo.<br>
+        <a href="${appUrl}" style="color:#9ca3af">${appUrl}</a>
+      </p>
+    </div>`
 }
 
 export async function createOrgWithManager({
