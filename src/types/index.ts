@@ -38,6 +38,7 @@ export interface Job {
   scheduled_time_start: string | null
   scheduled_time_end: string | null
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  recurrence: 'none' | 'weekly' | 'monthly'
   created_at: string
   client?: Client
   worker?: Profile

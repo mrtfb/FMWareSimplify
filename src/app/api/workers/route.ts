@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { sendEmail, workerWelcomeHtml } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   const { full_name, email, password, organization_id } = await request.json()
@@ -35,7 +36,6 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  // upsert garante que o perfil existe mesmo que o trigger ainda não tenha corrido
   const { error: profileError } = await admin.from('profiles').upsert({
     id: data.user.id,
     full_name,
@@ -44,6 +44,13 @@ export async function POST(request: NextRequest) {
   })
 
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 })
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fmware-simplify.vercel.app'
+  await sendEmail({
+    to: email,
+    subject: 'Bem-vindo ao FichasWork — Acesso à sua conta',
+    html: workerWelcomeHtml({ name: full_name, email, password, appUrl }),
+  })
 
   return NextResponse.json({ ok: true })
 }
