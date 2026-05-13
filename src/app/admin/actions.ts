@@ -118,13 +118,12 @@ export async function createOrgWithManager({
   orgName,
   managerName,
   email,
-  password,
 }: {
   orgName: string
   managerName: string
   email: string
-  password: string
 }): Promise<{ error?: string }> {
+  const password = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + '!1'
   const admin = createAdminClient()
 
   const { data: org, error: orgError } = await admin
@@ -153,6 +152,58 @@ export async function createOrgWithManager({
     organization_id: org.id,
   })
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fmware.app'
+  const { data: linkData } = await admin.auth.admin.generateLink({
+    type: 'recovery',
+    email: email.trim().toLowerCase(),
+  })
+  const resetLink = linkData?.properties?.action_link ?? `${appUrl}/auth/login`
+
+  await sendEmail({
+    to: email.trim().toLowerCase(),
+    subject: 'Bem-vindo ao FichasWork — Aceda à sua conta',
+    html: managerWelcomeHtml({
+      name: managerName.trim(),
+      orgName: orgName.trim(),
+      email: email.trim().toLowerCase(),
+      resetLink,
+      appUrl,
+    }),
+  })
+
   revalidatePath('/admin')
   return {}
+}
+
+function managerWelcomeHtml({
+  name,
+  orgName,
+  email,
+  resetLink,
+  appUrl,
+}: {
+  name: string
+  orgName: string
+  email: string
+  resetLink: string
+  appUrl: string
+}) {
+  return `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
+      <h2 style="color:#1d4ed8;margin-bottom:4px">Bem-vindo ao FichasWork!</h2>
+      <p style="color:#6b7280;margin-top:0">Olá ${name}, a conta da sua empresa foi criada.</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:24px 0">
+        <p style="margin:0 0 8px"><strong>Empresa:</strong> ${orgName}</p>
+        <p style="margin:0 0 8px"><strong>Email:</strong> ${email}</p>
+        <p style="margin:0;color:#6b7280;font-size:13px">Clique no botão abaixo para definir a sua password e aceder à plataforma.</p>
+      </div>
+      <a href="${resetLink}"
+        style="display:inline-block;background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">
+        Definir password e entrar
+      </a>
+      <p style="color:#9ca3af;font-size:12px;margin-top:32px">
+        Este link expira em 24 horas.<br>
+        <a href="${appUrl}" style="color:#9ca3af">${appUrl}</a>
+      </p>
+    </div>`
 }

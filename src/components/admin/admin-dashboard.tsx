@@ -38,7 +38,7 @@ const plans = ['trial', 'starter', 'pro', 'business']
 export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
   const [newOpen, setNewOpen] = useState(false)
   const [editOrg, setEditOrg] = useState<OrgRow | null>(null)
-  const [form, setForm] = useState({ orgName: '', managerName: '', email: '', password: '' })
+  const [form, setForm] = useState({ orgName: '', managerName: '', email: '' })
   const [editForm, setEditForm] = useState({ name: '', plan: '', status: '', managerEmail: '', managerName: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -65,7 +65,7 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
     setLoading(false)
     if (result.error) { setError(result.error); return }
     setNewOpen(false)
-    setForm({ orgName: '', managerName: '', email: '', password: '' })
+    setForm({ orgName: '', managerName: '', email: '' })
   }
 
   async function handleEdit(e: React.FormEvent) {
@@ -277,10 +277,7 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
             <div className="space-y-1">
               <Label>Email do gestor *</Label>
               <Input type="email" placeholder="joao@empresa.pt" value={form.email} onChange={e => set('email', e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label>Password temporária *</Label>
-              <Input type="password" placeholder="Mínimo 8 caracteres" value={form.password} onChange={e => set('password', e.target.value)} />
+              <p className="text-xs text-gray-400">O gestor receberá um email para definir a sua password.</p>
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-2 justify-end">
