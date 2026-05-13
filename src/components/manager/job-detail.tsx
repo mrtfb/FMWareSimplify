@@ -11,12 +11,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft, Pencil, Trash2 } from 'lucide-react'
+import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft, Pencil, Trash2, AlertTriangle } from 'lucide-react'
 import type { Job, DailyReport, JobReport } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
 import { WStatus } from '@/components/shared/status'
+import { checkWorkerConflicts, type ConflictInfo } from '@/lib/check-conflicts'
 
 interface JobDetailProps {
   job: Job & { client?: unknown }
@@ -59,6 +60,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
     recurrence: (job.recurrence ?? 'none') as 'none' | 'weekly' | 'monthly',
   })
   const [saving, setSaving] = useState(false)
+  const [conflicts, setConflicts] = useState<ConflictInfo[]>([])
 
   function toggleWorker(id: string) {
     setForm(f => ({
@@ -69,7 +71,20 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
     }))
   }
 
-  async function handleSave() {
+  async function handleSave(force = false) {
+    if (!force && form.worker_ids.length && form.scheduled_date && form.scheduled_time_start) {
+      const found = await checkWorkerConflicts(supabase, {
+        workerIds: form.worker_ids,
+        scheduledDate: form.scheduled_date,
+        durationDays: form.duration_days,
+        timeStart: form.scheduled_time_start,
+        timeEnd: form.scheduled_time_end || form.scheduled_time_start,
+        excludeJobId: job.id,
+      })
+      setConflicts(found)
+      if (found.length) return
+    }
+    setConflicts([])
     setSaving(true)
     const { worker_ids, ...rest } = form
     await supabase.from('jobs').update({
@@ -321,9 +336,29 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
               <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />
             </div>
 
+            {conflicts.length > 0 && (
+              <div className="rounded-lg border border-amber bg-amber-soft px-4 py-3 text-sm">
+                <div className="mb-1.5 flex items-center gap-2 font-medium text-amber-fg">
+                  <AlertTriangle className="h-4 w-4" />
+                  Conflito de horário detectado
+                </div>
+                <ul className="space-y-0.5 text-[12px] text-amber-fg/80">
+                  {conflicts.map((c, i) => (
+                    <li key={i}>{c.workerName} já tem o trabalho "{c.jobTitle}" nessa data.</li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex gap-2">
+                  <button onClick={() => setConflicts([])} className="text-[12px] font-medium text-amber-fg underline underline-offset-2">Rever</button>
+                  <button onClick={() => handleSave(true)} className="rounded border border-amber-fg/30 px-3 py-1 text-[12px] font-medium text-amber-fg hover:bg-amber/20">
+                    Guardar mesmo assim
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2 justify-end pt-2">
-              <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave} disabled={saving || !form.title.trim()}>
+              <Button variant="outline" onClick={() => { setEditOpen(false); setConflicts([]) }}>Cancelar</Button>
+              <Button onClick={() => handleSave()} disabled={saving || !form.title.trim()}>
                 {saving ? 'A guardar...' : 'Guardar'}
               </Button>
             </div>

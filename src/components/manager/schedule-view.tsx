@@ -73,25 +73,23 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(anchor, i)), [anchor])
   const todayISO = format(new Date(), 'yyyy-MM-dd')
 
-  // Bucket jobs by worker × day for O(1) lookups inside the render loop.
-  // Multi-day jobs appear on every date they span.
-  const byWorkerDay = useMemo(() => {
+  // Collect all unique jobs per worker that are visible in the current week.
+  const byWorker = useMemo(() => {
+    const weekStart = format(days[0], 'yyyy-MM-dd')
+    const weekEnd   = format(days[6], 'yyyy-MM-dd')
     const map = new Map<string, JobOnSchedule[]>()
     for (const j of jobs) {
-      const days = Math.max(1, j.duration_days ?? 1)
-      const start = new Date(j.scheduled_date + 'T12:00:00')
-      for (let d = 0; d < days; d++) {
-        const date = format(addDays(start, d), 'yyyy-MM-dd')
-        for (const wid of j.worker_ids) {
-          const key = `${wid}|${date}`
-          const arr = map.get(key) ?? []
-          arr.push(j)
-          map.set(key, arr)
-        }
+      const jStart = j.scheduled_date
+      const jEnd   = format(addDays(new Date(j.scheduled_date + 'T12:00:00'), Math.max(1, j.duration_days ?? 1) - 1), 'yyyy-MM-dd')
+      if (jStart > weekEnd || jEnd < weekStart) continue   // outside this week
+      for (const wid of j.worker_ids) {
+        const arr = map.get(wid) ?? []
+        if (!arr.some(x => x.id === j.id)) arr.push(j)
+        map.set(wid, arr)
       }
     }
     return map
-  }, [jobs])
+  }, [jobs, days])
 
   return (
     <div className="flex h-full flex-col p-8">
@@ -195,74 +193,94 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
 
         {/* Body */}
         <div className="flex-1 overflow-auto">
-          {workers.map((w, wi) => (
-            <div
-              key={w.id}
-              className={cn(
-                'grid min-h-[64px]',
-                wi < workers.length - 1 && 'border-b border-border',
-              )}
-              style={{ gridTemplateColumns: '168px repeat(7, minmax(132px, 1fr))' }}
-            >
-              {/* Worker label cell */}
-              <div className="sticky left-0 z-10 flex items-center gap-2.5 border-r border-border bg-card px-3.5 py-3">
-                <WAvatar id={w.id} name={w.full_name} size={28} />
-                <div className="min-w-0">
-                  <div className="truncate text-[13px] font-medium">{w.full_name}</div>
-                  <div className="font-mono text-[10px] uppercase tracking-[0.04em] text-mute">
-                    TÉCNICO
+          {workers.map((w, wi) => {
+            const workerJobs = byWorker.get(w.id) ?? []
+            return (
+              <div
+                key={w.id}
+                className={cn(
+                  'flex min-h-[72px]',
+                  wi < workers.length - 1 && 'border-b border-border',
+                )}
+              >
+                {/* Sticky worker label */}
+                <div className="sticky left-0 z-10 flex w-[168px] shrink-0 items-center gap-2.5 border-r border-border bg-card px-3.5 py-3">
+                  <WAvatar id={w.id} name={w.full_name} size={28} />
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-medium">{w.full_name}</div>
+                    <div className="font-mono text-[10px] uppercase tracking-[0.04em] text-mute">TÉCNICO</div>
                   </div>
                 </div>
-              </div>
 
-              {/* Day cells */}
-              {days.map((d, di) => {
-                const iso = format(d, 'yyyy-MM-dd')
-                const isToday = iso === todayISO
-                const dayJobs = byWorkerDay.get(`${w.id}|${iso}`) ?? []
-                return (
-                  <div
-                    key={iso}
-                    className={cn(
-                      'relative',
-                      di < 6 && 'border-r border-border',
-                      isToday && 'bg-[oklch(0.985_0.012_65)]',
-                    )}
-                  >
-                    {dayJobs.map(j => {
-                      const left = (timeToFrac(j.scheduled_time_start) / (DAY_END - DAY_START)) * 100
-                      const right =
-                        ((DAY_END -
-                          DAY_START -
-                          timeToFrac(j.scheduled_time_end ?? j.scheduled_time_start)) /
-                          (DAY_END - DAY_START)) *
-                        100
+                {/* Day area: background grid + absolute tile overlay */}
+                <div className="relative flex-1">
+                  {/* Background: day column dividers + today highlight */}
+                  <div className="absolute inset-0 grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
+                    {days.map((d, di) => {
+                      const iso = format(d, 'yyyy-MM-dd')
                       return (
-                        <Link
-                          key={j.id}
-                          href={`/manager/jobs/${j.id}`}
+                        <div
+                          key={iso}
                           className={cn(
-                            'absolute inset-y-1.5 overflow-hidden rounded border-l-2 px-2 py-1 transition-shadow hover:shadow-sm',
-                            j.status === 'cancelled' && 'line-through opacity-70',
+                            'h-full',
+                            di < 6 && 'border-r border-border',
+                            iso === todayISO && 'bg-amber-soft',
                           )}
-                          style={{ ...jobTileStyle(j), left: `${left}%`, right: `${right}%` }}
-                          title={`${j.title} · ${j.scheduled_time_start?.slice(0, 5)}–${j.scheduled_time_end?.slice(0, 5)}`}
-                        >
-                          <div className="truncate text-[11px] font-medium leading-tight">
-                            {j.title}
-                          </div>
-                          <div className="mt-0.5 font-mono text-[9px] tracking-wide opacity-70">
-                            {j.scheduled_time_start?.slice(0, 5)}–{j.scheduled_time_end?.slice(0, 5)} ·{' '}
-                            {(j.client?.name ?? '—').slice(0, 18)}
-                          </div>
-                        </Link>
+                        />
                       )
                     })}
                   </div>
-                )
-              })}
-            </div>
-          ))}
+
+                  {/* Tile overlay: jobs positioned as % of the 7-day width */}
+                  {workerJobs.map(j => {
+                    const weekStart = days[0]
+                    const jStart    = new Date(j.scheduled_date + 'T12:00:00')
+                    const duration  = Math.max(1, j.duration_days ?? 1)
+                    const jEnd      = addDays(jStart, duration - 1)
+
+                    // Which columns does the job touch in the current week?
+                    const colStart = Math.max(0, Math.round((jStart.getTime() - weekStart.getTime()) / 86400000))
+                    const colEnd   = Math.min(6, Math.round((jEnd.getTime()   - weekStart.getTime()) / 86400000))
+
+                    // Start time only applies on the first visible day; end time on the last.
+                    const startsThisWeek = colStart >= 0 && j.scheduled_date >= format(weekStart, 'yyyy-MM-dd')
+                    const endsThisWeek   = colEnd <= 6
+
+                    const timeStart = startsThisWeek ? timeToFrac(j.scheduled_time_start) : 0
+                    const timeEnd   = endsThisWeek   ? timeToFrac(j.scheduled_time_end ?? j.scheduled_time_start) : DAY_END - DAY_START
+
+                    // left% and right% as fraction of the full 7-day area
+                    const leftPct  = ((colStart + timeStart / (DAY_END - DAY_START)) / 7) * 100
+                    const rightPct = ((6 - colEnd + (DAY_END - DAY_START - timeEnd) / (DAY_END - DAY_START)) / 7) * 100
+
+                    return (
+                      <Link
+                        key={j.id}
+                        href={`/manager/jobs/${j.id}`}
+                        className={cn(
+                          'absolute inset-y-1.5 overflow-hidden rounded border-l-2 px-2 py-1 transition-shadow hover:shadow-md',
+                          j.status === 'cancelled' && 'line-through opacity-60',
+                        )}
+                        style={{
+                          ...jobTileStyle(j),
+                          left: `${leftPct}%`,
+                          right: `${rightPct}%`,
+                        }}
+                        title={`${j.title} · ${j.scheduled_time_start?.slice(0, 5)}–${j.scheduled_time_end?.slice(0, 5)}`}
+                      >
+                        <div className="truncate text-[11px] font-medium leading-tight">{j.title}</div>
+                        <div className="mt-0.5 font-mono text-[9px] tracking-wide opacity-70">
+                          {j.scheduled_time_start?.slice(0, 5)}–{j.scheduled_time_end?.slice(0, 5)}
+                          {duration > 1 && ` · ${duration}d`}
+                          {j.client?.name && ` · ${j.client.name.slice(0, 14)}`}
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 

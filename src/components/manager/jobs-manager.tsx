@@ -8,11 +8,12 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { Plus, Search, RefreshCw } from 'lucide-react'
+import { Plus, Search, RefreshCw, AlertTriangle } from 'lucide-react'
 import { JobsTable } from './jobs-table'
 import type { Job } from '@/types'
 import { useRouter } from 'next/navigation'
 import { addDays, addMonths } from 'date-fns'
+import { checkWorkerConflicts, type ConflictInfo } from '@/lib/check-conflicts'
 
 interface JobWorkerRow {
   job_id: string
@@ -62,6 +63,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
   const [editing, setEditing] = useState<Job | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(false)
+  const [conflicts, setConflicts] = useState<ConflictInfo[]>([])
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterClient, setFilterClient] = useState<string>('all')
@@ -117,7 +119,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
     setOpen(true)
   }
 
-  async function handleSave() {
+  async function handleSaveForced() {
     setLoading(true)
     const { worker_ids, ...rest } = form
     const payload = {
@@ -127,10 +129,8 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
       scheduled_time_start: rest.scheduled_time_start || null,
       scheduled_time_end: rest.scheduled_time_end || null,
     }
-
     let jobId: string
     const isNew = !editing
-
     if (editing) {
       await supabase.from('jobs').update(payload).eq('id', editing.id)
       jobId = editing.id
@@ -139,22 +139,33 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
       const { data } = await supabase.from('jobs').insert({ ...payload, organization_id: organizationId }).select().single()
       jobId = data!.id
     }
-
     if (worker_ids.length > 0) {
       await supabase.from('job_workers').insert(worker_ids.map(wid => ({ job_id: jobId, worker_id: wid })))
     }
-
     if (isNew && worker_ids.length > 0) {
-      fetch('/api/jobs/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_id: jobId }),
-      }).catch(() => null)
+      fetch('/api/jobs/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ job_id: jobId }) }).catch(() => null)
     }
-
     setLoading(false)
     setOpen(false)
+    setConflicts([])
     router.refresh()
+  }
+
+  async function handleSave() {
+    // Check for conflicts before saving (non-blocking — just warn)
+    if (form.worker_ids.length && form.scheduled_date && form.scheduled_time_start) {
+      const found = await checkWorkerConflicts(supabase, {
+        workerIds: form.worker_ids,
+        scheduledDate: form.scheduled_date,
+        durationDays: form.duration_days,
+        timeStart: form.scheduled_time_start,
+        timeEnd: form.scheduled_time_end || form.scheduled_time_start,
+        excludeJobId: editing?.id,
+      })
+      setConflicts(found)
+      if (found.length) return  // show warning, don't save yet
+    }
+    await handleSaveForced()
   }
 
   async function createNextOccurrence() {
@@ -299,6 +310,31 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
         <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Detalhes do trabalho..." rows={3} />
       </div>
 
+      {conflicts.length > 0 && (
+        <div className="rounded-lg border border-amber bg-amber-soft px-4 py-3 text-sm">
+          <div className="mb-1.5 flex items-center gap-2 font-medium text-amber-fg">
+            <AlertTriangle className="h-4 w-4" />
+            Conflito de horário detectado
+          </div>
+          <ul className="space-y-0.5 text-[12px] text-amber-fg/80">
+            {conflicts.map((c, i) => (
+              <li key={i}>{c.workerName} já tem o trabalho "{c.jobTitle}" nessa data.</li>
+            ))}
+          </ul>
+          <div className="mt-3 flex gap-2">
+            <button onClick={() => setConflicts([])} className="text-[12px] font-medium text-amber-fg underline underline-offset-2">
+              Rever
+            </button>
+            <button
+              onClick={async () => { setConflicts([]); await handleSaveForced() }}
+              className="rounded border border-amber-fg/30 px-3 py-1 text-[12px] font-medium text-amber-fg hover:bg-amber/20"
+            >
+              Guardar mesmo assim
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2 justify-end pt-2 flex-wrap">
         {editing && form.recurrence !== 'none' && form.scheduled_date && (
           <Button variant="outline" onClick={createNextOccurrence} disabled={loading} className="gap-1.5">
@@ -306,7 +342,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
             Criar próxima ocorrência
           </Button>
         )}
-        <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+        <Button variant="outline" onClick={() => { setOpen(false); setConflicts([]) }}>Cancelar</Button>
         <Button onClick={handleSave} disabled={loading || !form.title.trim()}>
           {loading ? 'A guardar...' : 'Guardar'}
         </Button>
