@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { ChevronLeft, MapPin, Phone, User, Calendar, FileText, Plus, CheckCircle, AlertCircle } from 'lucide-react'
+import { ChevronLeft, MapPin, Phone, User, Calendar, FileText, Plus, CheckCircle, AlertCircle, Users } from 'lucide-react'
 import type { Job, DailyReport, JobReport } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -13,6 +13,7 @@ interface WorkerJobDetailProps {
   dailyReports: (DailyReport & { media?: { public_url: string }[] })[]
   jobReports: (JobReport & { media?: { public_url: string }[] })[]
   userId: string
+  team: string[]
 }
 
 const statusConfig = {
@@ -22,7 +23,7 @@ const statusConfig = {
   cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
 }
 
-export function WorkerJobDetail({ job, dailyReports, jobReports, userId }: WorkerJobDetailProps) {
+export function WorkerJobDetail({ job, dailyReports, jobReports, userId, team }: WorkerJobDetailProps) {
   const st = statusConfig[job.status]
   const client = job.client
   const startReport = jobReports.find(r => r.report_type === 'start')
@@ -60,6 +61,13 @@ export function WorkerJobDetail({ job, dailyReports, jobReports, userId }: Worke
           <Calendar className="h-4 w-4" />
           {format(new Date(job.scheduled_date), 'EEEE, dd MMMM yyyy', { locale: ptBR })}
           {job.scheduled_time_start && ` – ${job.scheduled_time_start.slice(0, 5)}`}
+        </p>
+      )}
+
+      {team.length > 0 && (
+        <p className="text-sm text-gray-600 flex items-center gap-1.5">
+          <Users className="h-4 w-4 shrink-0" />
+          <span><span className="font-medium">Equipa:</span> {team.join(', ')}</span>
         </p>
       )}
 
