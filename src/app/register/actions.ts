@@ -22,7 +22,7 @@ export async function registerOrganization({
     .select()
     .single()
 
-  if (orgError || !org) return { error: 'Erro ao criar organização.' }
+  if (orgError || !org) return { error: `Erro ao criar organização: ${orgError?.message ?? 'sem dados'}` }
 
   // 2. Create auth user (email already confirmed)
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
