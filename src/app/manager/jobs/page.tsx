@@ -10,7 +10,7 @@ export default async function JobsPage() {
   const [{ data: jobs }, { data: clients }, { data: workers }, { data: jobWorkers }] = await Promise.all([
     supabase.from('jobs').select('*, client:clients(name)').eq('organization_id', orgId).order('scheduled_date', { ascending: true }),
     supabase.from('clients').select('id, name').eq('organization_id', orgId).order('name'),
-    supabase.from('profiles').select('id, full_name').eq('organization_id', orgId).eq('role', 'worker').order('full_name'),
+    supabase.from('profiles').select('id, full_name').eq('organization_id', orgId).in('role', ['worker', 'manager']).order('full_name'),
     supabase.from('job_workers').select('job_id, worker_id, worker:profiles(full_name)') as unknown as Promise<{ data: { job_id: string; worker_id: string; worker: { full_name: string } | null }[] | null; error: unknown }>,
   ])
 

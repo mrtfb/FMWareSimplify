@@ -23,7 +23,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     supabase.from('job_reports').select('*, worker:profiles(full_name), media(*)').eq('job_id', id).order('report_date'),
     supabase.from('job_workers').select('worker:profiles(id, full_name)').eq('job_id', id),
     supabase.from('clients').select('id, name').eq('organization_id', orgId).order('name'),
-    supabase.from('profiles').select('id, full_name').eq('organization_id', orgId).eq('role', 'worker').order('full_name'),
+    supabase.from('profiles').select('id, full_name').eq('organization_id', orgId).in('role', ['worker', 'manager']).order('full_name'),
   ])
 
   if (!job) notFound()

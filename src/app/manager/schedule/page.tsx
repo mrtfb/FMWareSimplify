@@ -25,7 +25,7 @@ export default async function SchedulePage() {
       .from('profiles')
       .select('id, full_name')
       .eq('organization_id', orgId)
-      .eq('role', 'worker')
+      .in('role', ['worker', 'manager'])
       .order('full_name'),
     supabase
       .from('jobs')

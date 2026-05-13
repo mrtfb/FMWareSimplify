@@ -61,7 +61,7 @@ export default async function ManagerDashboard() {
       .from('profiles')
       .select('id, full_name')
       .eq('organization_id', orgId)
-      .eq('role', 'worker')
+      .in('role', ['worker', 'manager'])
       .limit(6),
   ])
 

@@ -15,11 +15,20 @@ export default async function WorkerLayout({ children }: { children: React.React
     .single()
 
   if (!profile) redirect('/auth/login')
-  if (profile.role === 'manager') redirect('/manager')
+  if (profile.role === 'superadmin') redirect('/admin')
+
+  const { data: org } = profile.role === 'manager' || profile.role === 'superadmin'
+    ? await supabase.from('organizations').select('name, logo_url').eq('id', profile.organization_id).single()
+    : { data: null }
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar role="worker" userName={profile.full_name} />
+      <Sidebar
+        role={profile.role as 'manager' | 'worker'}
+        userName={profile.full_name}
+        orgName={org?.name}
+        orgLogo={org?.logo_url}
+      />
       <main className="flex-1 overflow-auto">
         {children}
       </main>

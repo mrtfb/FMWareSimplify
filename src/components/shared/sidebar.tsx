@@ -25,12 +25,13 @@ interface NavItem {
 }
 
 const managerNav: NavItem[] = [
-  { href: '/manager',          label: 'Hoje',      icon: LayoutDashboard },
-  { href: '/manager/jobs',     label: 'Trabalhos', icon: Briefcase },
-  { href: '/manager/schedule', label: 'Agenda',    icon: CalendarClock },
-  { href: '/manager/clients',  label: 'Clientes',  icon: Building2 },
-  { href: '/manager/workers',  label: 'Equipa',    icon: Users },
-  { href: '/manager/reports',  label: 'Fichas',    icon: FileText },
+  { href: '/manager',          label: 'Hoje',           icon: LayoutDashboard },
+  { href: '/manager/jobs',     label: 'Trabalhos',      icon: Briefcase },
+  { href: '/manager/schedule', label: 'Agenda',         icon: CalendarClock },
+  { href: '/manager/clients',  label: 'Clientes',       icon: Building2 },
+  { href: '/manager/workers',  label: 'Equipa',         icon: Users },
+  { href: '/manager/reports',  label: 'Fichas',         icon: FileText },
+  { href: '/worker/jobs',      label: 'Os meus trab.',  icon: CalendarDays },
 ]
 
 const workerNav: NavItem[] = [
