@@ -1,17 +1,16 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { MapPin, User, Calendar, Clock, FileText, Camera, CheckCircle, AlertCircle, ChevronLeft } from 'lucide-react'
+import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft } from 'lucide-react'
 import type { Job, DailyReport, JobReport } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
 
 interface JobDetailProps {
-  job: Job & { client?: unknown; worker?: unknown }
+  job: Job & { client?: unknown }
+  workers?: { id: string; full_name: string }[]
   dailyReports: (DailyReport & { worker?: { full_name: string }; media?: { public_url: string; caption: string | null }[] })[]
   jobReports: (JobReport & { worker?: { full_name: string }; media?: { public_url: string; caption: string | null }[] })[]
 }
@@ -23,18 +22,17 @@ const statusConfig = {
   cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
 }
 
-export function JobDetail({ job, dailyReports, jobReports }: JobDetailProps) {
+export function JobDetail({ job, workers = [], dailyReports, jobReports }: JobDetailProps) {
   const st = statusConfig[job.status]
   const client = job.client as { name: string; address: string | null } | null
-  const worker = job.worker as { full_name: string } | null
   const startReport = jobReports.find(r => r.report_type === 'start')
   const finishReport = jobReports.find(r => r.report_type === 'finish')
 
   return (
     <div className="p-8 space-y-6 max-w-4xl">
       <div className="flex items-center gap-3">
-        <Link href="/manager/jobs">
-          <Button variant="ghost" size="sm"><ChevronLeft className="h-4 w-4 mr-1" />Trabalhos</Button>
+        <Link href="/manager/jobs" className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm text-ink-2 hover:bg-raise hover:text-ink transition-colors">
+          <ChevronLeft className="h-4 w-4" />Trabalhos
         </Link>
       </div>
 
@@ -43,6 +41,7 @@ export function JobDetail({ job, dailyReports, jobReports }: JobDetailProps) {
           <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
           <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-600">
             {client && <span className="flex items-center gap-1"><User className="h-4 w-4" />{client.name}</span>}
+            {workers.length > 0 && <span className="flex items-center gap-1"><Users className="h-4 w-4" />{workers.map(w => w.full_name).join(', ')}</span>}
             {job.location && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{job.location}</span>}
             {job.scheduled_date && <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{format(new Date(job.scheduled_date), 'dd MMM yyyy', { locale: ptBR })}</span>}
             {job.scheduled_time_start && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{job.scheduled_time_start.slice(0, 5)}</span>}
