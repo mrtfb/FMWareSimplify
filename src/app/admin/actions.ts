@@ -59,7 +59,7 @@ export async function updateOrg({
         const { data: linkData } = await admin.auth.admin.generateLink({
           type: 'recovery',
           email: newEmail,
-          options: { redirectTo: `${appUrl}/auth/callback?next=/auth/reset-password` },
+          options: { redirectTo: `${appUrl}/auth/reset-password` },
         })
         const resetLink = linkData?.properties?.action_link ?? `${appUrl}/auth/login`
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -10,10 +10,33 @@ import { PasswordField, isPasswordStrong } from '@/components/shared/password-fi
 
 export default function ResetPasswordPage() {
   const router = useRouter()
+  const [ready, setReady] = useState(false)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    // Supabase sends tokens in the URL hash (implicit flow)
+    // We need to establish the session before allowing password update
+    const hash = window.location.hash
+    if (!hash) { setReady(true); return }
+
+    const params = new URLSearchParams(hash.substring(1))
+    const access_token = params.get('access_token')
+    const refresh_token = params.get('refresh_token')
+
+    if (access_token && refresh_token) {
+      const supabase = createClient()
+      supabase.auth.setSession({ access_token, refresh_token }).then(() => {
+        // Clean the hash from the URL without reloading
+        window.history.replaceState(null, '', window.location.pathname)
+        setReady(true)
+      })
+    } else {
+      setReady(true)
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,7 +54,7 @@ export default function ResetPasswordPage() {
     const { error: updateError } = await supabase.auth.updateUser({ password })
     setLoading(false)
     if (updateError) {
-      setError('Erro ao definir password. O link pode ter expirado.')
+      setError('Erro ao definir password. Tente novamente.')
       return
     }
     router.push('/')
@@ -49,27 +72,31 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="bg-white rounded-2xl border shadow-sm p-6 space-y-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Nova password</Label>
-              <PasswordField value={password} onChange={setPassword} showStrength />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Confirmar password</Label>
-              <PasswordField value={confirm} onChange={setConfirm} />
-              {confirm.length > 0 && password !== confirm && (
-                <p className="text-xs text-red-500">As passwords não coincidem.</p>
-              )}
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading || !isPasswordStrong(password) || password !== confirm}
-            >
-              {loading ? 'A guardar...' : 'Definir password e entrar'}
-            </Button>
-          </form>
+          {!ready ? (
+            <p className="text-sm text-gray-500 text-center py-4">A verificar sessão...</p>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Nova password</Label>
+                <PasswordField value={password} onChange={setPassword} showStrength />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Confirmar password</Label>
+                <PasswordField value={confirm} onChange={setConfirm} />
+                {confirm.length > 0 && password !== confirm && (
+                  <p className="text-xs text-red-500">As passwords não coincidem.</p>
+                )}
+              </div>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || !isPasswordStrong(password) || password !== confirm}
+              >
+                {loading ? 'A guardar...' : 'Definir password e entrar'}
+              </Button>
+            </form>
+          )}
         </div>
       </div>
     </div>
