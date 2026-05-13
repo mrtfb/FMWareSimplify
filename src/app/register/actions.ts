@@ -50,7 +50,7 @@ export async function registerOrganization({
   if (profileError) {
     await admin.auth.admin.deleteUser(authData.user.id)
     await admin.from('organizations').delete().eq('id', org.id)
-    return { error: 'Erro ao criar perfil.' }
+    return { error: `Erro ao criar perfil: ${profileError.message}` }
   }
 
   return {}
