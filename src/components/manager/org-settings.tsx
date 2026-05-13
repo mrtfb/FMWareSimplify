@@ -39,7 +39,7 @@ export function OrgSettings({ org }: { org: Org }) {
 
     const path = `${org.id}/logo`
     const { error: uploadError } = await supabase.storage.from('logos').upload(path, file, { upsert: true })
-    if (uploadError) { setMessage('Erro ao carregar imagem.'); setUploading(false); return }
+    if (uploadError) { setMessage(`Erro ao carregar imagem: ${uploadError.message}`); setUploading(false); return }
 
     const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(path)
     // Bust cache with timestamp
