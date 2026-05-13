@@ -16,9 +16,15 @@ export default async function ManagerLayout({ children }: { children: React.Reac
 
   if (!profile || profile.role !== 'manager') redirect('/worker')
 
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('name, logo_url')
+    .eq('id', profile.organization_id)
+    .single()
+
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar role="manager" userName={profile.full_name} />
+      <Sidebar role="manager" userName={profile.full_name} orgName={org?.name} orgLogo={org?.logo_url} />
       <main className="flex-1 overflow-auto">
         {children}
       </main>

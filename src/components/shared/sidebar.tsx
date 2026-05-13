@@ -1,11 +1,7 @@
-// handoff/src/components/shared/sidebar.tsx
-//
-// REPLACES the current src/components/shared/sidebar.tsx.
-// Light Workshop bar with ink-on-paper + amber active indicator.
-
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { signOut } from '@/app/auth/actions'
 import { cn } from '@/lib/utils'
@@ -19,6 +15,7 @@ import {
   Building2,
   Briefcase,
   CalendarClock,
+  Settings,
 } from 'lucide-react'
 
 interface NavItem {
@@ -28,27 +25,28 @@ interface NavItem {
 }
 
 const managerNav: NavItem[] = [
-  { href: '/manager',          label: 'Hoje',         icon: LayoutDashboard },
-  { href: '/manager/jobs',     label: 'Trabalhos',    icon: Briefcase },
-  { href: '/manager/schedule', label: 'Agenda',       icon: CalendarClock },
-  { href: '/manager/clients',  label: 'Clientes',     icon: Building2 },
-  { href: '/manager/workers',  label: 'Equipa',       icon: Users },
-  { href: '/manager/reports',  label: 'Fichas',       icon: FileText },
+  { href: '/manager',          label: 'Hoje',      icon: LayoutDashboard },
+  { href: '/manager/jobs',     label: 'Trabalhos', icon: Briefcase },
+  { href: '/manager/schedule', label: 'Agenda',    icon: CalendarClock },
+  { href: '/manager/clients',  label: 'Clientes',  icon: Building2 },
+  { href: '/manager/workers',  label: 'Equipa',    icon: Users },
+  { href: '/manager/reports',  label: 'Fichas',    icon: FileText },
 ]
 
 const workerNav: NavItem[] = [
-  { href: '/worker',          label: 'Hoje',          icon: LayoutDashboard },
-  { href: '/worker/jobs',     label: 'Trabalhos',     icon: Briefcase },
-  { href: '/worker/calendar', label: 'Calendário',    icon: CalendarDays },
+  { href: '/worker',          label: 'Hoje',       icon: LayoutDashboard },
+  { href: '/worker/jobs',     label: 'Trabalhos',  icon: Briefcase },
+  { href: '/worker/calendar', label: 'Calendário', icon: CalendarDays },
 ]
 
 interface SidebarProps {
   role: 'manager' | 'worker'
   userName: string
   orgName?: string
+  orgLogo?: string | null
 }
 
-export function Sidebar({ role, userName, orgName }: SidebarProps) {
+export function Sidebar({ role, userName, orgName, orgLogo }: SidebarProps) {
   const pathname = usePathname()
   const nav = role === 'manager' ? managerNav : workerNav
 
@@ -57,14 +55,26 @@ export function Sidebar({ role, userName, orgName }: SidebarProps) {
       {/* Brand */}
       <div className="border-b border-border px-[18px] pb-[18px] pt-5">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-amber text-ink">
-            <ClipboardList className="h-4 w-4" strokeWidth={2.2} />
-          </span>
+          {orgLogo ? (
+            <Image
+              src={orgLogo}
+              alt={orgName ?? 'Logo'}
+              width={28}
+              height={28}
+              className="h-7 w-7 rounded-md object-cover"
+            />
+          ) : (
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber text-ink">
+              <ClipboardList className="h-4 w-4" strokeWidth={2.2} />
+            </span>
+          )}
           <div className="min-w-0">
-            <div className="text-sm font-semibold tracking-tight">FichasWork</div>
+            <div className="truncate text-sm font-semibold tracking-tight">
+              {orgName ?? 'FichasWork'}
+            </div>
             {orgName && (
-              <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-mute">
-                {orgName}
+              <div className="font-mono text-[10px] uppercase tracking-[0.04em] text-mute">
+                FichasWork
               </div>
             )}
           </div>
@@ -107,15 +117,25 @@ export function Sidebar({ role, userName, orgName }: SidebarProps) {
         })}
       </nav>
 
-      {/* User */}
+      {/* User + settings */}
       <div className="border-t border-border p-3">
+        {role === 'manager' && (
+          <Link
+            href="/manager/settings"
+            className={cn(
+              'mb-1 flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors',
+              pathname.startsWith('/manager/settings')
+                ? 'bg-sidebar-accent text-ink'
+                : 'text-ink-2 hover:bg-sidebar-accent/60 hover:text-ink',
+            )}
+          >
+            <Settings className="h-[15px] w-[15px]" strokeWidth={1.5} />
+            Definições
+          </Link>
+        )}
         <div className="flex items-center gap-2.5 px-1.5 py-1.5">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-soft font-mono text-[11px] font-semibold text-ink">
-            {userName
-              .split(/\s+/)
-              .slice(0, 2)
-              .map(p => p[0]?.toUpperCase())
-              .join('')}
+          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-soft font-mono text-[11px] font-semibold text-ink">
+            {userName.split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase()).join('')}
           </span>
           <div className="min-w-0 flex-1">
             <div className="truncate text-xs font-medium">{userName}</div>
@@ -124,11 +144,7 @@ export function Sidebar({ role, userName, orgName }: SidebarProps) {
             </div>
           </div>
           <form action={signOut}>
-            <button
-              type="submit"
-              className="text-mute transition-colors hover:text-ink"
-              aria-label="Sair"
-            >
+            <button type="submit" className="text-mute transition-colors hover:text-ink" aria-label="Sair">
               <LogOut className="h-[14px] w-[14px]" />
             </button>
           </form>
