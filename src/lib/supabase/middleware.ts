@@ -27,7 +27,8 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  if (!user && !pathname.startsWith('/auth')) {
+  const publicPaths = ['/auth', '/register']
+  if (!user && !publicPaths.some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
@@ -39,10 +40,20 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     const role = profile?.role
-    if (role === 'manager') {
-      return NextResponse.redirect(new URL('/manager', request.url))
-    } else {
-      return NextResponse.redirect(new URL('/worker', request.url))
+    if (role === 'superadmin') return NextResponse.redirect(new URL('/admin', request.url))
+    if (role === 'manager') return NextResponse.redirect(new URL('/manager', request.url))
+    return NextResponse.redirect(new URL('/worker', request.url))
+  }
+
+  // Prevent non-superadmins from accessing /admin
+  if (user && pathname.startsWith('/admin')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    if (profile?.role !== 'superadmin') {
+      return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
