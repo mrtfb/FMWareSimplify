@@ -51,6 +51,8 @@ export interface DailyReport {
   worker_id: string | null
   report_date: string
   description: string
+  time_start: string | null
+  time_end: string | null
   hours_worked: number | null
   materials_used: string | null
   observations: string | null

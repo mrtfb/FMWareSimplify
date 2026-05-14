@@ -28,7 +28,7 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
         <SignatureCanvas
           ref={sigRef}
           penColor="black"
-          canvasProps={{ className: 'w-full', height: 160 }}
+          canvasProps={{ className: 'w-full', height: 250 }}
         />
       </div>
       <Button

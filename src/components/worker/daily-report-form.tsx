@@ -19,6 +19,8 @@ interface DailyReportFormProps {
     report_date: string
     description: string | null
     hours_worked: number | null
+    time_start: string | null
+    time_end: string | null
     materials_used: string | null
     observations: string | null
     media?: { public_url: string }[]
@@ -44,8 +46,8 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
   const [form, setForm] = useState({
     report_date: existingReport?.report_date ?? todayStr,
     description: existingReport?.description ?? '',
-    time_start: '',
-    time_end: '',
+    time_start: existingReport?.time_start ?? '',
+    time_end: existingReport?.time_end ?? '',
     hours_worked: existingReport?.hours_worked?.toString() ?? '',
     materials_used: existingReport?.materials_used ?? '',
     observations: existingReport?.observations ?? '',
@@ -91,6 +93,8 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
       worker_id: userId,
       report_date: form.report_date,
       description: form.description,
+      time_start: form.time_start || null,
+      time_end: form.time_end || null,
       hours_worked: form.hours_worked ? parseFloat(form.hours_worked) : null,
       materials_used: form.materials_used || null,
       observations: form.observations || null,
@@ -187,7 +191,7 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
             </Label>
             <Input
               type="number"
-              step="0.5"
+              step="any"
               min="0"
               max="24"
               value={form.hours_worked}

@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft, Pencil, Trash2, AlertTriangle } from 'lucide-react'
+import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft, Pencil, Trash2, AlertTriangle, FileDown, Loader2 } from 'lucide-react'
 import type { Job, DailyReport, JobReport } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -116,6 +116,27 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
   // ── Delete ───────────────────────────────────────────────────────────────
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  const [pdfLoading, setPdfLoading] = useState(false)
+  async function handlePDF() {
+    setPdfLoading(true)
+    try {
+      const res = await fetch(`/api/pdf/${job.id}`)
+      if (!res.ok) throw new Error()
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const clientName = client?.name ? `-${client.name.replace(/\s+/g, '_')}` : ''
+      const jobDate = job.scheduled_date ? `-${job.scheduled_date}` : ''
+      a.download = `relatorio${clientName}${jobDate}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Erro ao gerar PDF. Tente novamente.')
+    }
+    setPdfLoading(false)
+  }
   async function handleDelete() {
     setDeleting(true)
     await supabase.from('jobs').delete().eq('id', job.id)
@@ -136,6 +157,14 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
           <ChevronLeft className="h-4 w-4" />Trabalhos
         </Link>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handlePDF}
+            disabled={pdfLoading}
+            className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+          >
+            {pdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+            Gerar PDF
+          </button>
           <button
             onClick={() => setEditOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-ink hover:bg-raise transition-colors"

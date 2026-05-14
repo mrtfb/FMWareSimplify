@@ -57,6 +57,8 @@ create table public.daily_reports (
   worker_id uuid references public.profiles(id) on delete set null,
   report_date date not null default current_date,
   description text not null,
+  time_start time,
+  time_end time,
   hours_worked numeric(4,2),
   materials_used text,
   observations text,
