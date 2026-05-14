@@ -122,7 +122,10 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
     setPdfLoading(true)
     try {
       const res = await fetch(`/api/pdf/${job.id}`)
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -132,8 +135,8 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
       a.download = `relatorio${clientName}${jobDate}.pdf`
       a.click()
       URL.revokeObjectURL(url)
-    } catch {
-      alert('Erro ao gerar PDF. Tente novamente.')
+    } catch (err) {
+      alert(`Erro ao gerar PDF: ${err instanceof Error ? err.message : err}`)
     }
     setPdfLoading(false)
   }

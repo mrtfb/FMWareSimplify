@@ -64,7 +64,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     pending: 'Pendente', in_progress: 'Em curso', completed: 'Concluído', cancelled: 'Cancelado',
   }
 
-  const pdf = await renderToBuffer(
+  let pdf: Buffer
+  try {
+    pdf = await renderToBuffer(
     <Document title={`Relatório - ${job.title}`}>
       <Page size="A4" style={styles.page}>
         {/* Header */}
@@ -218,7 +220,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         </View>
       </Page>
     </Document>
-  )
+    )
+  } catch (err) {
+    console.error('[PDF] renderToBuffer failed:', err)
+    return NextResponse.json({ error: String(err) }, { status: 500 })
+  }
 
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
