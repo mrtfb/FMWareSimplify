@@ -62,7 +62,7 @@ export function OrgSettings({ org }: { org: Org }) {
   const displayLogo = preview ?? logoUrl
 
   return (
-    <div className="p-8 max-w-xl space-y-8">
+    <div className="p-4 md:p-8 max-w-xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Definições</h1>
         <p className="text-sm text-gray-500 mt-1">Configurações da empresa</p>

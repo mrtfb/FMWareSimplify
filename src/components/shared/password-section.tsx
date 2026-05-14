@@ -37,7 +37,7 @@ export function PasswordSection() {
   }
 
   return (
-    <div className="px-8 pb-8 max-w-xl">
+    <div className="px-4 pb-8 md:px-8 max-w-xl">
       <div className="border-t pt-8 space-y-5">
         <div className="flex items-center gap-3">
           <div className="bg-blue-50 p-2 rounded-lg">

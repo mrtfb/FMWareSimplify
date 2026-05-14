@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/shared/sidebar'
+import { MobileNav } from '@/components/shared/mobile-nav'
 
 export default async function ManagerLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -22,12 +23,14 @@ export default async function ManagerLayout({ children }: { children: React.Reac
     .eq('id', profile.organization_id)
     .single()
 
+  const role = profile.role as 'manager' | 'superadmin'
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar role={profile.role as 'manager' | 'superadmin'} userName={profile.full_name} orgName={org?.name} orgLogo={org?.logo_url} />
-      <main className="flex-1 overflow-auto">
+      <Sidebar role={role} userName={profile.full_name} orgName={org?.name} orgLogo={org?.logo_url} />
+      <main className="flex-1 overflow-auto pb-16 md:pb-0">
         {children}
       </main>
+      <MobileNav role={role} />
     </div>
   )
 }

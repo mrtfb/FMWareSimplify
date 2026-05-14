@@ -59,7 +59,7 @@ export function WorkerJobList({ jobs }: WorkerJobListProps) {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Meus Trabalhos</h1>
         <p className="text-gray-500 text-sm mt-1">{active.length} trabalho{active.length !== 1 ? 's' : ''} ativo{active.length !== 1 ? 's' : ''}</p>

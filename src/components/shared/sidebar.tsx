@@ -53,7 +53,7 @@ export function Sidebar({ role, userName, orgName, orgLogo }: SidebarProps) {
   const nav = (role === 'manager' || role === 'superadmin') ? managerNav : workerNav
 
   return (
-    <aside className="flex w-[220px] shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
+    <aside className="hidden md:flex w-[220px] shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
       {/* Brand */}
       <div className="border-b border-border px-[18px] pb-[18px] pt-5">
         <div className="flex items-center gap-2.5">

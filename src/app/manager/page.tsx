@@ -87,7 +87,7 @@ export default async function ManagerDashboard() {
   const fichasMissing = (missingFichas ?? []).length
 
   return (
-    <div className="space-y-7 p-8">
+    <div className="space-y-5 p-4 md:p-8">
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -113,7 +113,7 @@ export default async function ManagerDashboard() {
       </div>
 
       {/* Operational tiles — what NEEDS attention today */}
-      <div className="grid grid-cols-4 divide-x divide-border rounded-xl border border-border bg-card">
+      <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border rounded-xl border border-border bg-card">
         <OpTile
           label="A decorrer agora"
           value={(inProgress ?? []).length}
@@ -140,7 +140,7 @@ export default async function ManagerDashboard() {
       </div>
 
       {/* Two-column: timeline + side rail */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
         {/* Today timeline */}
         <section className="overflow-hidden rounded-xl border border-border bg-card">
           <header className="flex items-center justify-between border-b border-border px-5 py-3.5">

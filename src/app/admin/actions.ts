@@ -77,6 +77,41 @@ export async function updateOrg({
   return {}
 }
 
+export async function inviteManagerToOrg({
+  orgId,
+  managerName,
+  email,
+}: {
+  orgId: string
+  managerName: string
+  email: string
+}): Promise<{ error?: string }> {
+  const admin = createAdminClient()
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fmware.app'
+
+  const { data: inviteData, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
+    email.trim().toLowerCase(),
+    {
+      data: { full_name: managerName.trim() },
+      redirectTo: `${appUrl}/auth/reset-password`,
+    }
+  )
+
+  if (inviteError || !inviteData.user) {
+    return { error: inviteError?.message ?? 'Erro ao convidar gestor.' }
+  }
+
+  await admin.from('profiles').upsert({
+    id: inviteData.user.id,
+    full_name: managerName.trim(),
+    role: 'manager',
+    organization_id: orgId,
+  })
+
+  revalidatePath('/admin')
+  return {}
+}
+
 export async function createOrgWithManager({
   orgName,
   managerName,

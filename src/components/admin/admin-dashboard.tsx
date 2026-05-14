@@ -9,7 +9,7 @@ import { signOut } from '@/app/auth/actions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { setOrgStatus, setOrgPlan, createOrgWithManager, updateOrg } from '@/app/admin/actions'
+import { setOrgStatus, setOrgPlan, createOrgWithManager, updateOrg, inviteManagerToOrg } from '@/app/admin/actions'
 
 interface OrgRow {
   id: string
@@ -42,11 +42,28 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
   const [editForm, setEditForm] = useState({ name: '', plan: '', status: '', managerEmail: '', managerName: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [inviteForm, setInviteForm] = useState({ name: '', email: '' })
+  const [inviting, setInviting] = useState(false)
+  const [inviteMsg, setInviteMsg] = useState('')
 
   function set(f: string, v: string) { setForm(prev => ({ ...prev, [f]: v })) }
   function setE(f: string, v: string) { setEditForm(prev => ({ ...prev, [f]: v })) }
 
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editOrg) return
+    setInviting(true); setInviteMsg('')
+    const result = await inviteManagerToOrg({ orgId: editOrg.id, managerName: inviteForm.name, email: inviteForm.email })
+    setInviting(false)
+    if (result.error) { setInviteMsg(`Erro: ${result.error}`) } else {
+      setInviteMsg('Convite enviado!')
+      setInviteForm({ name: '', email: '' })
+    }
+  }
+
   function openEdit(org: OrgRow) {
+    setInviteForm({ name: '', email: '' })
+    setInviteMsg('')
     setEditForm({
       name: org.name,
       plan: org.plan,
@@ -256,6 +273,34 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
               <Button type="submit" disabled={loading}>{loading ? 'A guardar...' : 'Guardar'}</Button>
             </div>
           </form>
+
+          {/* Invite additional manager */}
+          <div className="border-t pt-4 mt-2 space-y-3">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Adicionar gestor</p>
+            <form onSubmit={handleInvite} className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Nome"
+                  value={inviteForm.name}
+                  onChange={e => setInviteForm(f => ({ ...f, name: e.target.value }))}
+                />
+                <input
+                  type="email"
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Email"
+                  value={inviteForm.email}
+                  onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))}
+                />
+              </div>
+              {inviteMsg && (
+                <p className={`text-xs ${inviteMsg.startsWith('Erro') ? 'text-red-600' : 'text-green-600'}`}>{inviteMsg}</p>
+              )}
+              <Button type="submit" variant="outline" size="sm" disabled={inviting || !inviteForm.name || !inviteForm.email}>
+                {inviting ? 'A enviar...' : 'Enviar convite'}
+              </Button>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
 
