@@ -146,16 +146,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const totalHours = (dailyReports ?? []).reduce((sum: number, r: any) => sum + (r.hours_worked ?? 0), 0)
   const totalPhotos = [...(dailyReports ?? []), ...(jobReports ?? [])].reduce((sum, r: any) => sum + (r.media?.length ?? 0), 0)
 
-  // Date range: earliest to latest report date
+  // Collect all report dates sorted ascending
   const allDates = [
     ...(dailyReports ?? []).map((r: any) => r.report_date),
     ...(jobReports ?? []).map((r: any) => r.report_date),
   ].sort()
-  const dateRange = allDates.length
-    ? allDates.length === 1
-      ? formatDateShort(allDates[0])
-      : `${formatDateShort(allDates[0])} – ${formatDateShort(allDates[allDates.length - 1])}`
-    : job.scheduled_date ? formatDateShort(job.scheduled_date) : '—'
 
   let pdf: Buffer
   try {
@@ -201,10 +196,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               <Text style={s.metaLabel}>Estado</Text>
               <Text style={s.metaValue}>{statusLabels[job.status] ?? job.status}</Text>
             </View>
-            <View style={s.metaRow}>
-              <Text style={s.metaLabel}>Período</Text>
-              <Text style={s.metaValue}>{dateRange}</Text>
-            </View>
+            {allDates.length > 0 && (
+              <View style={s.metaRow}>
+                <Text style={s.metaLabel}>Data de início</Text>
+                <Text style={s.metaValue}>{formatDate(allDates[0])}</Text>
+              </View>
+            )}
+            {allDates.length > 1 && (
+              <View style={s.metaRow}>
+                <Text style={s.metaLabel}>Data de fim</Text>
+                <Text style={s.metaValue}>{formatDate(allDates[allDates.length - 1])}</Text>
+              </View>
+            )}
           </View>
 
           {/* Stats */}
@@ -220,10 +223,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             <View style={s.summaryBox}>
               <Text style={s.summaryNum}>{totalPhotos}</Text>
               <Text style={s.summaryLabel}>Fotografias</Text>
-            </View>
-            <View style={s.summaryBox}>
-              <Text style={s.summaryNum}>{startReport && finishReport ? '✓' : startReport || finishReport ? '½' : '—'}</Text>
-              <Text style={s.summaryLabel}>Fichas início/fim</Text>
             </View>
           </View>
 
