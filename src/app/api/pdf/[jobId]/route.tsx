@@ -47,16 +47,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const [{ data: job }, { data: dailyReports }, { data: jobReports }] = await Promise.all([
-    supabase.from('jobs').select('*, client:clients(*), worker:profiles(full_name)').eq('id', jobId).single(),
-    supabase.from('daily_reports').select('*, media(*), worker:profiles(full_name)').eq('job_id', jobId).order('report_date'),
-    supabase.from('job_reports').select('*, media(*), worker:profiles(full_name)').eq('job_id', jobId).order('report_date'),
+  const [{ data: job, error: jobError }, { data: dailyReports }, { data: jobReports }, { data: jobWorkers }] = await Promise.all([
+    supabase.from('jobs').select('*, client:clients(*)').eq('id', jobId).single(),
+    supabase.from('daily_reports').select('*, media(*)').eq('job_id', jobId).order('report_date'),
+    supabase.from('job_reports').select('*, media(*)').eq('job_id', jobId).order('report_date'),
+    supabase.from('job_workers').select('worker:profiles(id, full_name)').eq('job_id', jobId),
   ])
 
-  if (!job) return NextResponse.json({ error: 'Trabalho não encontrado' }, { status: 404 })
+  if (!job) {
+    console.error('[PDF] job query error:', jobError)
+    return NextResponse.json({ error: `Trabalho não encontrado: ${jobError?.message ?? 'null'}` }, { status: 404 })
+  }
 
   const client = job.client as Record<string, string> | null
-  const worker = job.worker as { full_name: string } | null
+  const workerNames = (jobWorkers ?? []).map((jw: any) => jw.worker?.full_name).filter(Boolean).join(', ')
   const startReport = jobReports?.find((r: any) => r.report_type === 'start')
   const finishReport = jobReports?.find((r: any) => r.report_type === 'finish')
 
@@ -81,7 +85,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           <View style={styles.row}><Text style={styles.label}>Título:</Text><Text style={styles.value}>{job.title}</Text></View>
           {client && <View style={styles.row}><Text style={styles.label}>Cliente:</Text><Text style={styles.value}>{client.name}</Text></View>}
           {client?.address && <View style={styles.row}><Text style={styles.label}>Morada:</Text><Text style={styles.value}>{client.address}</Text></View>}
-          {worker && <View style={styles.row}><Text style={styles.label}>Trabalhador:</Text><Text style={styles.value}>{worker.full_name}</Text></View>}
+          {workerNames && <View style={styles.row}><Text style={styles.label}>Equipa:</Text><Text style={styles.value}>{workerNames}</Text></View>}
           {job.scheduled_date && <View style={styles.row}><Text style={styles.label}>Data agendada:</Text><Text style={styles.value}>{formatDate(job.scheduled_date)}</Text></View>}
           {job.location && <View style={styles.row}><Text style={styles.label}>Local:</Text><Text style={styles.value}>{job.location}</Text></View>}
           <View style={styles.row}><Text style={styles.label}>Estado:</Text><Text style={styles.value}>{statusLabels[job.status] ?? job.status}</Text></View>
