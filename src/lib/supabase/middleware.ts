@@ -27,9 +27,16 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
+  // Helper: redirect while preserving any refreshed session cookies
+  function redirect(url: string) {
+    const res = NextResponse.redirect(new URL(url, request.url))
+    supabaseResponse.cookies.getAll().forEach(cookie => res.cookies.set(cookie))
+    return res
+  }
+
   const publicPaths = ['/auth', '/register', '/auth/reset-password']
   if (!user && !publicPaths.some(p => pathname.startsWith(p))) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    return redirect('/auth/login')
   }
 
   if (user && pathname === '/') {
@@ -40,21 +47,18 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     const role = profile?.role
-    if (role === 'superadmin') return NextResponse.redirect(new URL('/admin', request.url))
-    if (role === 'manager') return NextResponse.redirect(new URL('/manager', request.url))
-    return NextResponse.redirect(new URL('/worker', request.url))
+    if (role === 'superadmin') return redirect('/admin')
+    if (role === 'manager') return redirect('/manager')
+    return redirect('/worker')
   }
 
-  // Prevent non-superadmins from accessing /admin
   if (user && pathname.startsWith('/admin')) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
-    if (profile?.role !== 'superadmin') {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
+    if (profile?.role !== 'superadmin') return redirect('/')
   }
 
   return supabaseResponse

@@ -52,7 +52,8 @@ export default function ResetPasswordPage() {
     const { error: updateError } = await supabase.auth.updateUser({ password })
     setLoading(false)
     if (updateError) { setError('Erro ao definir password. Tente novamente.'); return }
-    router.push('/')
+    // Full reload so the server picks up the fresh session cookies
+    window.location.href = '/'
   }
 
   return (
