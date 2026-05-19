@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="FMWARE wordmark">
+  <text x="600" y="210"
+        font-family="'Helvetica Neue', 'Arial Black', 'Inter', sans-serif"
+        font-weight="900"
+        font-size="180"
+        letter-spacing="10"
+        text-anchor="middle"
+        fill="#ffffff">FMWARE</text>
+  <rect x="380" y="240" width="440" height="6" rx="3" fill="#FF6A1A"/>
+  <circle cx="845" cy="243" r="9" fill="#FF6A1A"/>
+</svg>

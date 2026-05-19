@@ -75,11 +75,11 @@ export default function LoginPage() {
         {/* Logo smaller at bottom */}
         <div className="pt-10">
           <Image
-            src="/fmware-logo.svg"
+            src="/fmware-wordmark-transparent.svg"
             alt="FMWare"
             width={280}
-            height={163}
-            className="w-56 opacity-80"
+            height={70}
+            className="w-52 opacity-70"
             priority
           />
           <p className="text-xs text-white/15 mt-3">© {new Date().getFullYear()} FMWare. Todos os direitos reservados.</p>
