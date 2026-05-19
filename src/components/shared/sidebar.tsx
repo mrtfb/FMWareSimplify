@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   KeyRound,
 } from 'lucide-react'
+import { ThemeToggle } from './theme-toggle'
 
 interface NavItem {
   href: string
@@ -163,6 +164,7 @@ export function Sidebar({ role, userName, orgName, orgLogo }: SidebarProps) {
               {role === 'manager' ? 'GESTOR' : 'TÉCNICO'}
             </div>
           </div>
+          <ThemeToggle className="text-mute hover:text-ink p-1" />
           <form action={signOut}>
             <button type="submit" className="text-mute transition-colors hover:text-ink" aria-label="Sair">
               <LogOut className="h-[14px] w-[14px]" />

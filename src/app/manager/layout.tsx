@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/shared/sidebar'
 import { MobileNav } from '@/components/shared/mobile-nav'
+import { ThemeToggle } from '@/components/shared/theme-toggle'
 
 export default async function ManagerLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -30,6 +31,7 @@ export default async function ManagerLayout({ children }: { children: React.Reac
       <main className="flex-1 overflow-auto pb-16 md:pb-0">
         {children}
       </main>
+      <ThemeToggle className="fixed top-3 right-3 z-40 md:hidden p-2 rounded-full bg-card border border-border text-mute shadow-sm" />
       <MobileNav role={role} />
     </div>
   )
