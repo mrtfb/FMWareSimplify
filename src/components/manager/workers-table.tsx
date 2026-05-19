@@ -59,8 +59,8 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Trabalhadores</h1>
-          <p className="text-gray-500 text-sm mt-1">{workers.length} trabalhador{workers.length !== 1 ? 'es' : ''}</p>
+          <h1 className="text-2xl font-bold text-ink">Trabalhadores</h1>
+          <p className="text-mute text-sm mt-1">{workers.length} trabalhador{workers.length !== 1 ? 'es' : ''}</p>
         </div>
         <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-2" /> Novo trabalhador</Button>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -69,7 +69,7 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
               <DialogTitle>Adicionar trabalhador</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
-              <p className="text-sm text-gray-500">Será criada uma conta de acesso para o trabalhador.</p>
+              <p className="text-sm text-mute">Será criada uma conta de acesso para o trabalhador.</p>
               <div className="space-y-1">
                 <Label>Nome completo *</Label>
                 <Input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} placeholder="Nome do trabalhador" />
@@ -89,7 +89,7 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
                   <p className="text-xs text-red-500">As passwords não coincidem.</p>
                 )}
               </div>
-              <p className="text-xs text-gray-400">O trabalhador receberá um email com os dados de acesso.</p>
+              <p className="text-xs text-mute">O trabalhador receberá um email com os dados de acesso.</p>
               {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
               <div className="flex gap-2 justify-end pt-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -110,7 +110,7 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
       />
 
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-mute">
           <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
           <p>Nenhum trabalhador encontrado</p>
         </div>
@@ -119,8 +119,8 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
           {filtered.map(worker => (
             <Card key={worker.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-5 flex items-center gap-4">
-                <div className="bg-gray-100 rounded-full p-2">
-                  <UserCircle className="h-8 w-8 text-gray-400" />
+                <div className="bg-raise rounded-full p-2">
+                  <UserCircle className="h-8 w-8 text-mute" />
                 </div>
                 <div>
                   <p className="font-semibold">{worker.full_name}</p>

@@ -27,10 +27,10 @@ interface OrgRow {
 }
 
 const planColors: Record<string, string> = {
-  trial:    'bg-yellow-100 text-yellow-800',
-  starter:  'bg-blue-100 text-blue-800',
-  pro:      'bg-purple-100 text-purple-800',
-  business: 'bg-green-100 text-green-800',
+  trial:    'bg-yellow-500/15 text-yellow-400',
+  starter:  'bg-amber-soft0/15 text-blue-400',
+  pro:      'bg-purple-500/15 text-purple-400',
+  business: 'bg-green-500/15 text-green-400',
 }
 
 const plans = ['trial', 'starter', 'pro', 'business']
@@ -104,16 +104,16 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b px-8 py-5 flex items-center justify-between">
+      <div className="bg-card border-b px-8 py-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg">
+          <div className="bg-primary p-2 rounded-lg">
             <ShieldCheck className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Super Admin</h1>
-            <p className="text-xs text-gray-500">GestObra — Gestão de organizações</p>
+            <h1 className="text-xl font-bold text-ink">Super Admin</h1>
+            <p className="text-xs text-mute">GestObra — Gestão de organizações</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -122,7 +122,7 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
             Nova organização
           </Button>
           <form action={signOut}>
-            <button type="submit" className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors" title="Sair">
+            <button type="submit" className="p-2 rounded-md text-mute hover:text-ink-2 hover:bg-raise transition-colors" title="Sair">
               <LogOut className="h-4 w-4" />
             </button>
           </form>
@@ -132,25 +132,25 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
       {/* Stats */}
       <div className="px-8 py-6 grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Organizações', value: orgs.length, icon: Building2, color: 'text-blue-600' },
+          { label: 'Organizações', value: orgs.length, icon: Building2, color: 'text-primary' },
           { label: 'Ativas', value: orgs.filter(o => o.status === 'active').length, icon: Building2, color: 'text-green-600' },
           { label: 'Total trabalhadores', value: orgs.reduce((s, o) => s + o.workers, 0), icon: Users, color: 'text-purple-600' },
           { label: 'Trabalhos ativos', value: orgs.reduce((s, o) => s + o.jobs_active, 0), icon: Briefcase, color: 'text-amber-600' },
         ].map(stat => (
-          <div key={stat.label} className="bg-white rounded-xl border p-4">
+          <div key={stat.label} className="bg-card rounded-xl border p-4">
             <stat.icon className={`h-5 w-5 mb-2 ${stat.color}`} />
-            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+            <p className="text-2xl font-bold text-ink">{stat.value}</p>
+            <p className="text-xs text-mute mt-0.5">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {/* Table */}
       <div className="px-8 pb-8">
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-card rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <tr className="border-b bg-background text-xs font-medium text-mute uppercase tracking-wide">
                 <th className="text-left px-4 py-3">Empresa</th>
                 <th className="text-left px-4 py-3">Gestor</th>
                 <th className="text-left px-4 py-3">Plano</th>
@@ -163,56 +163,56 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
             </thead>
             <tbody>
               {orgs.map(org => (
-                <tr key={org.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{org.name}</td>
+                <tr key={org.id} className="border-b last:border-0 hover:bg-background">
+                  <td className="px-4 py-3 font-medium text-ink">{org.name}</td>
                   <td className="px-4 py-3">
                     {org.manager_name ? (
                       <div>
-                        <p className="text-gray-800 font-medium text-xs">{org.manager_name}</p>
+                        <p className="text-ink font-medium text-xs">{org.manager_name}</p>
                         {org.manager_email && (
-                          <p className="text-gray-400 text-[11px] flex items-center gap-1 mt-0.5">
+                          <p className="text-mute text-[11px] flex items-center gap-1 mt-0.5">
                             <Mail className="h-3 w-3" />{org.manager_email}
                           </p>
                         )}
                       </div>
                     ) : (
-                      <span className="text-gray-400 text-xs">—</span>
+                      <span className="text-mute text-xs">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${planColors[org.plan] ?? 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${planColors[org.plan] ?? 'bg-raise text-ink-2'}`}>
                       {org.plan}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${org.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${org.status === 'active' ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
                       {org.status === 'active' ? 'Ativa' : 'Suspensa'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-center text-gray-600">{org.workers}</td>
-                  <td className="px-4 py-3 text-center text-gray-600">
+                  <td className="px-4 py-3 text-center text-ink-2">{org.workers}</td>
+                  <td className="px-4 py-3 text-center text-ink-2">
                     {org.jobs_active > 0
-                      ? <span className="text-blue-600 font-medium">{org.jobs_active} ativos</span>
-                      : <span className="text-gray-400">{org.jobs_total} total</span>
+                      ? <span className="text-primary font-medium">{org.jobs_active} ativos</span>
+                      : <span className="text-mute">{org.jobs_total} total</span>
                     }
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
+                  <td className="px-4 py-3 text-mute text-xs">
                     {format(new Date(org.created_at), 'dd MMM yyyy', { locale: ptPT })}
                   </td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() => openEdit(org)}
-                      className="p-1.5 rounded hover:bg-gray-100"
+                      className="p-1.5 rounded hover:bg-raise"
                       title="Editar"
                     >
-                      <Pencil className="h-4 w-4 text-gray-400" />
+                      <Pencil className="h-4 w-4 text-mute" />
                     </button>
                   </td>
                 </tr>
               ))}
               {orgs.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-mute">
                     Nenhuma organização ainda.
                   </td>
                 </tr>
@@ -257,7 +257,7 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
               </div>
             </div>
             <div className="border-t pt-4 space-y-3">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Gestor principal</p>
+              <p className="text-xs font-semibold text-mute uppercase tracking-wide">Gestor principal</p>
               <div className="space-y-1">
                 <Label>Nome</Label>
                 <Input value={editForm.managerName} onChange={e => setE('managerName', e.target.value)} placeholder="Nome do gestor" />
@@ -276,7 +276,7 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
 
           {/* Invite additional manager */}
           <div className="border-t pt-4 mt-2 space-y-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Adicionar gestor</p>
+            <p className="text-xs font-semibold text-mute uppercase tracking-wide">Adicionar gestor</p>
             <form onSubmit={handleInvite} className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <input
@@ -322,7 +322,7 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
             <div className="space-y-1">
               <Label>Email do gestor *</Label>
               <Input type="email" placeholder="joao@empresa.pt" value={form.email} onChange={e => set('email', e.target.value)} />
-              <p className="text-xs text-gray-400">O gestor receberá um email para definir a sua password.</p>
+              <p className="text-xs text-mute">O gestor receberá um email para definir a sua password.</p>
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-2 justify-end">

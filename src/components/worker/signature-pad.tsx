@@ -24,10 +24,10 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(funct
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">{label}</p>
-      <div className="border-2 border-gray-200 rounded-xl overflow-hidden bg-white">
+      <div className="border-2 border-border rounded-xl overflow-hidden bg-card">
         <SignatureCanvas
           ref={sigRef}
-          penColor="black"
+          penColor="#e5e5e5"
           canvasProps={{ className: 'w-full', height: 250 }}
         />
       </div>

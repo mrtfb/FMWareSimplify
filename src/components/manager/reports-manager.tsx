@@ -14,10 +14,10 @@ interface ReportsManagerProps {
 }
 
 const statusConfig = {
-  pending: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
-  in_progress: { label: 'Em curso', color: 'bg-blue-100 text-blue-800' },
-  completed: { label: 'Concluído', color: 'bg-green-100 text-green-800' },
-  cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
+  pending: { label: 'Pendente', color: 'bg-yellow-500/15 text-yellow-400' },
+  in_progress: { label: 'Em curso', color: 'bg-blue-500/15 text-blue-400' },
+  completed: { label: 'Concluído', color: 'bg-green-500/15 text-green-400' },
+  cancelled: { label: 'Cancelado', color: 'bg-red-500/15 text-red-400' },
 }
 
 export function ReportsManager({ jobs }: ReportsManagerProps) {
@@ -44,12 +44,12 @@ export function ReportsManager({ jobs }: ReportsManagerProps) {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Relatórios</h1>
-        <p className="text-gray-500 text-sm mt-1">Gere e exporte relatórios PDF por trabalho</p>
+        <h1 className="text-2xl font-bold text-ink">Relatórios</h1>
+        <p className="text-mute text-sm mt-1">Gere e exporte relatórios PDF por trabalho</p>
       </div>
 
       {jobs.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-mute">
           <FileText className="h-12 w-12 mx-auto mb-3 opacity-40" />
           <p>Nenhum trabalho com fichas preenchidas</p>
         </div>
@@ -71,12 +71,12 @@ export function ReportsManager({ jobs }: ReportsManagerProps) {
                         <span className="font-semibold">{job.title}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.color}`}>{st.label}</span>
                       </div>
-                      <div className="flex flex-wrap gap-3 text-sm text-gray-500">
+                      <div className="flex flex-wrap gap-3 text-sm text-mute">
                         {job.client && <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{job.client.name}</span>}
                         {job.worker && <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" />{job.worker.full_name}</span>}
                         {job.scheduled_date && <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{format(new Date(job.scheduled_date), 'dd/MM/yyyy')}</span>}
                       </div>
-                      <div className="flex gap-3 mt-2 text-xs text-gray-400">
+                      <div className="flex gap-3 mt-2 text-xs text-mute">
                         <span className={startReport ? 'text-green-600 font-medium' : ''}>{startReport ? '✓ Ficha início' : '— Sem início'}</span>
                         <span className={dailyCount > 0 ? 'text-blue-600 font-medium' : ''}>{dailyCount} ficha{dailyCount !== 1 ? 's' : ''} diária{dailyCount !== 1 ? 's' : ''}</span>
                         <span className={finishReport ? 'text-green-600 font-medium' : ''}>{finishReport ? '✓ Ficha fim' : '— Sem fim'}</span>

@@ -65,11 +65,11 @@ export function WorkerCalendar({ jobs }: WorkerCalendarProps) {
   return (
     <div className="p-6 space-y-5 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Calendário</h1>
-        <p className="text-gray-500 text-sm mt-1">Os teus trabalhos agendados</p>
+        <h1 className="text-2xl font-bold text-ink">Calendário</h1>
+        <p className="text-mute text-sm mt-1">Os teus trabalhos agendados</p>
       </div>
 
-      <div className="bg-white rounded-xl border shadow-sm">
+      <div className="bg-card rounded-xl border shadow-sm">
         {/* Month nav */}
         <div className="flex items-center justify-between p-4 border-b">
           <Button variant="outline" size="sm" onClick={prevMonth}>{'‹'}</Button>
@@ -78,7 +78,7 @@ export function WorkerCalendar({ jobs }: WorkerCalendarProps) {
         </div>
 
         {/* Week day headers — Monday first */}
-        <div className="grid grid-cols-7 text-center text-xs font-medium text-gray-500 border-b">
+        <div className="grid grid-cols-7 text-center text-xs font-medium text-mute border-b">
           {WEEK_DAYS.map(d => (
             <div key={d} className="p-2">{d}</div>
           ))}
@@ -88,7 +88,7 @@ export function WorkerCalendar({ jobs }: WorkerCalendarProps) {
         <div className="grid grid-cols-7">
           {/* Leading empty cells */}
           {Array.from({ length: startPad }).map((_, i) => (
-            <div key={`pad-${i}`} className="min-h-[64px] border-r border-b p-1 bg-gray-50" />
+            <div key={`pad-${i}`} className="min-h-[64px] border-r border-b p-1 bg-background" />
           ))}
 
           {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -104,13 +104,13 @@ export function WorkerCalendar({ jobs }: WorkerCalendarProps) {
                 onClick={() => setSelectedDate(dateStr)}
                 className={[
                   'min-h-[64px] border-r border-b p-1 text-left w-full transition-colors',
-                  isSelected ? 'bg-blue-50 ring-2 ring-inset ring-blue-400' : 'hover:bg-gray-50',
+                  isSelected ? 'bg-blue-50 ring-2 ring-inset ring-blue-400' : 'hover:bg-background',
                   isToday && !isSelected ? 'bg-blue-50' : '',
                 ].join(' ')}
               >
                 <p className={[
                   'text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full',
-                  isToday ? 'bg-blue-600 text-white' : 'text-gray-700',
+                  isToday ? 'bg-blue-600 text-white' : 'text-ink-2',
                 ].join(' ')}>{day}</p>
                 <div className="space-y-0.5">
                   {dayJobs.slice(0, 2).map(job => {
@@ -130,7 +130,7 @@ export function WorkerCalendar({ jobs }: WorkerCalendarProps) {
                     )
                   })}
                   {dayJobs.length > 2 && (
-                    <p className="text-[10px] text-gray-400">+{dayJobs.length - 2}</p>
+                    <p className="text-[10px] text-mute">+{dayJobs.length - 2}</p>
                   )}
                 </div>
               </button>
@@ -142,11 +142,11 @@ export function WorkerCalendar({ jobs }: WorkerCalendarProps) {
       {/* Selected day detail */}
       {selectedDate && (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-gray-700 capitalize">
+          <h2 className="text-sm font-semibold text-ink-2 capitalize">
             {format(new Date(selectedDate + 'T12:00:00'), 'EEEE, dd MMMM', { locale: ptPT })}
           </h2>
           {selectedJobs.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4 text-center">Sem trabalhos neste dia</p>
+            <p className="text-sm text-mute py-4 text-center">Sem trabalhos neste dia</p>
           ) : (
             selectedJobs.map(job => {
               const st = statusConfig[job.status]
@@ -165,14 +165,14 @@ export function WorkerCalendar({ jobs }: WorkerCalendarProps) {
                         <div className={`w-2 h-10 rounded-full shrink-0 ${st.color}`} />
                         <div>
                           <p className="font-semibold text-sm">{job.title}</p>
-                          {client && <p className="text-xs text-gray-500">{client.name}</p>}
+                          {client && <p className="text-xs text-mute">{client.name}</p>}
                           {(client?.address || job.location) && (
-                            <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                            <p className="text-xs text-mute flex items-center gap-1 mt-0.5">
                               <MapPin className="h-3 w-3" />{client?.address ?? job.location}
                             </p>
                           )}
                           {duration > 1 && (
-                            <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                            <p className="text-xs text-mute flex items-center gap-1 mt-0.5">
                               <Calendar className="h-3 w-3" />
                               Dia {dayIndex + 1} de {duration}
                             </p>
@@ -181,9 +181,9 @@ export function WorkerCalendar({ jobs }: WorkerCalendarProps) {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {job.scheduled_time_start && (
-                          <span className="text-xs text-gray-500">{job.scheduled_time_start.slice(0, 5)}</span>
+                          <span className="text-xs text-mute">{job.scheduled_time_start.slice(0, 5)}</span>
                         )}
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                        <ChevronRight className="h-4 w-4 text-mute" />
                       </div>
                     </CardContent>
                   </Card>

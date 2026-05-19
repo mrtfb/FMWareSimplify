@@ -44,10 +44,10 @@ const emptyForm = {
 }
 
 const statusConfig = {
-  pending: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
-  in_progress: { label: 'Em curso', color: 'bg-blue-100 text-blue-800' },
-  completed: { label: 'Concluído', color: 'bg-green-100 text-green-800' },
-  cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
+  pending: { label: 'Pendente', color: 'bg-yellow-500/15 text-yellow-400' },
+  in_progress: { label: 'Em curso', color: 'bg-blue-500/15 text-blue-400' },
+  completed: { label: 'Concluído', color: 'bg-green-500/15 text-green-400' },
+  cancelled: { label: 'Cancelado', color: 'bg-red-500/15 text-red-400' },
 }
 
 const recurrenceConfig = {
@@ -261,14 +261,14 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
         {selectedWorkerNames && <p className="text-xs text-blue-600 mb-1">{selectedWorkerNames}</p>}
         <div className="border rounded-lg divide-y max-h-36 overflow-y-auto">
           {workers.length === 0 ? (
-            <p className="text-sm text-gray-400 p-3 text-center">Sem trabalhadores</p>
+            <p className="text-sm text-mute p-3 text-center">Sem trabalhadores</p>
           ) : workers.map(w => (
-            <label key={w.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50">
+            <label key={w.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-background">
               <input
                 type="checkbox"
                 checked={form.worker_ids.includes(w.id)}
                 onChange={() => toggleWorker(w.id)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                className="h-4 w-4 rounded border-border text-blue-600"
               />
               <span className="text-sm">{w.full_name}</span>
             </label>
@@ -365,12 +365,12 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Trabalhos</h1>
-          <p className="text-gray-500 text-sm mt-1">{filteredJobs.length} de {jobs.length} trabalho{jobs.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-ink">Trabalhos</h1>
+          <p className="text-mute text-sm mt-1">{filteredJobs.length} de {jobs.length} trabalho{jobs.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex overflow-hidden rounded-md border border-gray-200">
-            <button className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50" onClick={() => router.push('/manager/schedule')}>Equipa</button>
+          <div className="flex overflow-hidden rounded-md border border-border">
+            <button className="px-3 py-1.5 text-xs text-mute hover:bg-background" onClick={() => router.push('/manager/schedule')}>Equipa</button>
             <button className="bg-gray-900 text-white px-3 py-1.5 text-xs font-medium">Lista</button>
           </div>
           <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" /> Novo trabalho</Button>
@@ -388,7 +388,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-mute" />
           <Input
             placeholder="Pesquisar título, cliente, trabalhador..."
             value={search}

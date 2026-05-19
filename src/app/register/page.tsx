@@ -49,13 +49,13 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="w-full max-w-md text-center space-y-4">
-          <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
-            <ClipboardList className="h-8 w-8 text-green-600" />
+          <div className="bg-green-500/15 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+            <ClipboardList className="h-8 w-8 text-green-400" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Conta criada!</h1>
-          <p className="text-gray-500">A sua empresa foi registada com sucesso. Pode agora entrar com as suas credenciais.</p>
+          <h1 className="text-2xl font-bold text-ink">Conta criada!</h1>
+          <p className="text-mute">A sua empresa foi registada com sucesso. Pode agora entrar com as suas credenciais.</p>
           <Button className="w-full" onClick={() => router.push('/auth/login')}>
             Entrar na plataforma
           </Button>
@@ -65,20 +65,20 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-6">
         <div className="flex flex-col items-center gap-2">
-          <div className="bg-blue-600 p-3 rounded-xl">
+          <div className="bg-primary p-3 rounded-xl">
             <ClipboardList className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">FichasWork</h1>
-          <p className="text-gray-500 text-sm">Registe a sua empresa — 14 dias grátis</p>
+          <h1 className="text-2xl font-bold text-ink">FichasWork</h1>
+          <p className="text-mute text-sm">Registe a sua empresa — 14 dias grátis</p>
         </div>
 
-        <div className="bg-white rounded-2xl border shadow-sm p-6 space-y-4">
+        <div className="bg-card rounded-2xl border shadow-sm p-6 space-y-4">
           <div>
             <h2 className="text-lg font-semibold">Criar conta</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Sem cartão de crédito. Cancele quando quiser.</p>
+            <p className="text-sm text-mute mt-0.5">Sem cartão de crédito. Cancele quando quiser.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -138,9 +138,9 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-mute">
             Já tem conta?{' '}
-            <Link href="/auth/login" className="font-medium text-blue-600 hover:underline">
+            <Link href="/auth/login" className="font-medium text-primary hover:underline">
               Entrar
             </Link>
           </p>

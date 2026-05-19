@@ -64,19 +64,19 @@ export function OrgSettings({ org }: { org: Org }) {
   return (
     <div className="p-4 md:p-8 max-w-xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Definições</h1>
-        <p className="text-sm text-gray-500 mt-1">Configurações da empresa</p>
+        <h1 className="text-2xl font-bold text-ink">Definições</h1>
+        <p className="text-sm text-mute mt-1">Configurações da empresa</p>
       </div>
 
       {/* Logo */}
       <div className="space-y-3">
         <Label>Logo da empresa</Label>
         <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50">
+          <div className="h-16 w-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-background">
             {displayLogo ? (
               <img src={displayLogo} alt="Logo" className="h-full w-full object-cover" />
             ) : (
-              <Upload className="h-6 w-6 text-gray-300" />
+              <Upload className="h-6 w-6 text-mute" />
             )}
           </div>
           <div className="space-y-1.5">
@@ -91,7 +91,7 @@ export function OrgSettings({ org }: { org: Org }) {
                 <X className="h-3 w-3" /> Remover logo
               </button>
             )}
-            <p className="text-xs text-gray-400">PNG, JPG até 2MB. Recomendado: quadrado.</p>
+            <p className="text-xs text-mute">PNG, JPG até 2MB. Recomendado: quadrado.</p>
           </div>
         </div>
         <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoChange} />

@@ -72,8 +72,8 @@ export function ClientsTable({ clients, organizationId }: ClientsTableProps) {
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-          <p className="text-gray-500 text-sm mt-1">{clients.length} cliente{clients.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-ink">Clientes</h1>
+          <p className="text-mute text-sm mt-1">{clients.length} cliente{clients.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={openNew}>
           <Plus className="h-4 w-4 mr-2" /> Novo cliente
@@ -129,7 +129,7 @@ export function ClientsTable({ clients, organizationId }: ClientsTableProps) {
       />
 
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-mute">
           <Building2 className="h-12 w-12 mx-auto mb-3 opacity-40" />
           <p>Nenhum cliente encontrado</p>
           <Button variant="outline" className="mt-3" onClick={openNew}>Adicionar cliente</Button>
@@ -142,7 +142,7 @@ export function ClientsTable({ clients, organizationId }: ClientsTableProps) {
               <CardHeader className="pb-2 flex flex-row items-start justify-between">
                 <div>
                   <CardTitle className="text-base">{client.name}</CardTitle>
-                  {client.contact_name && <p className="text-sm text-gray-500">{client.contact_name}</p>}
+                  {client.contact_name && <p className="text-sm text-mute">{client.contact_name}</p>}
                 </div>
                 <div className="flex gap-1">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(client)}>
@@ -155,19 +155,19 @@ export function ClientsTable({ clients, organizationId }: ClientsTableProps) {
               </CardHeader>
               <CardContent className="space-y-1.5">
                 {client.address && (
-                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                  <div className="flex items-start gap-2 text-sm text-ink-2">
                     <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                     <span>{client.address}</span>
                   </div>
                 )}
                 {client.contact_phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-ink-2">
                     <Phone className="h-3.5 w-3.5" />
                     <span>{client.contact_phone}</span>
                   </div>
                 )}
                 {client.contact_email && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-ink-2">
                     <Mail className="h-3.5 w-3.5" />
                     <span className="truncate">{client.contact_email}</span>
                   </div>

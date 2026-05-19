@@ -160,8 +160,8 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
 
       <div>
         <h1 className="text-xl font-bold">{title}</h1>
-        <p className="text-sm text-gray-500">{jobTitle}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{description}</p>
+        <p className="text-sm text-mute">{jobTitle}</p>
+        <p className="text-xs text-mute mt-0.5">{description}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -181,8 +181,8 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
           />
         </div>
 
-        <div className="space-y-3 border rounded-xl p-4 bg-gray-50">
-          <p className="text-sm font-semibold text-gray-700">Confirmação do cliente</p>
+        <div className="space-y-3 border rounded-xl p-4 bg-background">
+          <p className="text-sm font-semibold text-ink-2">Confirmação do cliente</p>
 
           <div className="space-y-1">
             <Label>Nome do cliente</Label>
@@ -210,14 +210,14 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
               <button
                 type="button"
                 onClick={() => setForm(f => ({ ...f, client_approved: true }))}
-                className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${form.client_approved === true ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${form.client_approved === true ? 'border-green-500 bg-green-500/15 text-green-400' : 'border-border text-ink-2 hover:border-border'}`}
               >
                 Sim, aprova
               </button>
               <button
                 type="button"
                 onClick={() => setForm(f => ({ ...f, client_approved: false }))}
-                className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${form.client_approved === false ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${form.client_approved === false ? 'border-red-500 bg-red-500/15 text-red-400' : 'border-border text-ink-2 hover:border-border'}`}
               >
                 Não aprova
               </button>
@@ -228,7 +228,7 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
             <div>
               <p className="text-sm font-medium mb-1">Assinatura guardada:</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={existingReport.client_signature_url} alt="Assinatura" className="border rounded h-16 bg-white" />
+              <img src={existingReport.client_signature_url} alt="Assinatura" className="border rounded h-16 bg-card" />
             </div>
           ) : (
             <SignaturePad ref={sigRef} label="Assinatura do cliente (opcional)" />
@@ -249,10 +249,10 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-full border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            className="w-full border-2 border-dashed border-border/50 rounded-xl p-4 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors"
           >
-            <Camera className="h-6 w-6 mx-auto text-gray-400 mb-1" />
-            <p className="text-sm text-gray-500">Adicionar fotos</p>
+            <Camera className="h-6 w-6 mx-auto text-mute mb-1" />
+            <p className="text-sm text-mute">Adicionar fotos</p>
           </button>
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
           {previews.length > 0 && (

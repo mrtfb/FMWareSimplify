@@ -163,7 +163,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
           <button
             onClick={handlePDF}
             disabled={pdfLoading}
-            className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60 transition-colors"
           >
             {pdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
             Gerar PDF
@@ -176,7 +176,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
           </button>
           <button
             onClick={() => setDeleteOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md border border-red-500/30 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-500/10 transition-colors"
           >
             <Trash2 className="h-3.5 w-3.5" />Apagar
           </button>
@@ -430,7 +430,7 @@ function StatusCard({ label, report, count }: { label: string; report?: JobRepor
       <CardContent className="p-4 text-center">
         {done
           ? <CheckCircle className="h-6 w-6 text-green-500 mx-auto mb-1" />
-          : <AlertCircle className="h-6 w-6 text-gray-300 mx-auto mb-1" />}
+          : <AlertCircle className="h-6 w-6 text-mute mx-auto mb-1" />}
         <p className="text-sm font-medium">{label}</p>
         {count != null && <p className="text-2xl font-bold mt-1">{count}</p>}
         {report && <p className="text-xs text-mute mt-1">{format(new Date(report.report_date), 'dd/MM/yyyy')}</p>}
@@ -487,7 +487,7 @@ function ReportCard({
           <div>
             <p className="text-xs text-mute mb-1">Assinatura:</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={jobReport.client_signature_url} alt="Assinatura" className="border rounded h-16 bg-white" />
+            <img src={jobReport.client_signature_url} alt="Assinatura" className="border rounded h-16 bg-card" />
           </div>
         )}
 

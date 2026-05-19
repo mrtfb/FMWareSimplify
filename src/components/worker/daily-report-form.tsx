@@ -147,7 +147,7 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
 
       <div>
         <h1 className="text-xl font-bold">{existingReport ? 'Editar Ficha Diária' : 'Nova Ficha Diária'}</h1>
-        <p className="text-sm text-gray-500">{jobTitle}</p>
+        <p className="text-sm text-mute">{jobTitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -172,8 +172,8 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
           />
         </div>
 
-        <div className="space-y-2 p-3 bg-gray-50 rounded-xl border">
-          <p className="text-sm font-medium text-gray-700">Horário</p>
+        <div className="space-y-2 p-3 bg-background rounded-xl border">
+          <p className="text-sm font-medium text-ink-2">Horário</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Hora de chegada</Label>
@@ -202,7 +202,7 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
         </div>
 
         <div className="space-y-1">
-          <Label>Materiais utilizados <span className="text-xs text-gray-400">(opcional)</span></Label>
+          <Label>Materiais utilizados <span className="text-xs text-mute">(opcional)</span></Label>
           <Textarea
             value={form.materials_used}
             onChange={e => setForm(f => ({ ...f, materials_used: e.target.value }))}
@@ -213,7 +213,7 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
         </div>
 
         <div className="space-y-1">
-          <Label>Observações <span className="text-xs text-gray-400">(opcional)</span></Label>
+          <Label>Observações <span className="text-xs text-mute">(opcional)</span></Label>
           <Textarea
             value={form.observations}
             onChange={e => setForm(f => ({ ...f, observations: e.target.value }))}
@@ -236,11 +236,11 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            className="w-full border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors"
           >
-            <Camera className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-            <p className="text-sm text-gray-500">Clique para adicionar fotos</p>
-            <p className="text-xs text-gray-400">Até 10 imagens</p>
+            <Camera className="h-8 w-8 mx-auto text-mute mb-2" />
+            <p className="text-sm text-mute">Clique para adicionar fotos</p>
+            <p className="text-xs text-mute">Até 10 imagens</p>
           </button>
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
           {previews.length > 0 && (

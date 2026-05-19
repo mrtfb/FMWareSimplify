@@ -45,18 +45,18 @@ export default function WorkerSettingsPage() {
   return (
     <div className="p-8 max-w-md space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Definições</h1>
-        <p className="text-sm text-gray-500 mt-1">Configurações da sua conta</p>
+        <h1 className="text-2xl font-bold text-ink">Definições</h1>
+        <p className="text-sm text-mute mt-1">Configurações da sua conta</p>
       </div>
 
-      <div className="bg-white rounded-xl border p-6 space-y-5">
+      <div className="bg-card rounded-xl border p-6 space-y-5">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-50 p-2 rounded-lg">
-            <KeyRound className="h-5 w-5 text-blue-600" />
+          <div className="bg-amber-soft p-2 rounded-lg">
+            <KeyRound className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">Alterar password</p>
-            <p className="text-xs text-gray-500">Escolha uma nova password segura</p>
+            <p className="font-semibold text-ink">Alterar password</p>
+            <p className="text-xs text-mute">Escolha uma nova password segura</p>
           </div>
         </div>
 
