@@ -113,7 +113,7 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Super Admin</h1>
-            <p className="text-xs text-gray-500">FichasWork — Gestão de organizações</p>
+            <p className="text-xs text-gray-500">GestObra — Gestão de organizações</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

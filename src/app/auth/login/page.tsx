@@ -3,11 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ClipboardList } from 'lucide-react'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,152 +23,165 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-
     const supabase = createClient()
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
-
     if (authError) {
       setError('Email ou password incorretos.')
       setLoading(false)
       return
     }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .single()
-
-    if (profile?.role === 'superadmin') {
-      router.push('/admin')
-    } else if (profile?.role === 'manager') {
-      router.push('/manager')
-    } else {
-      router.push('/worker')
-    }
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+    if (profile?.role === 'superadmin') router.push('/admin')
+    else if (profile?.role === 'manager') router.push('/manager')
+    else router.push('/worker')
   }
 
   async function handleRecovery(e: React.FormEvent) {
     e.preventDefault()
     setRecoveryLoading(true)
     const supabase = createClient()
-    const appUrl = window.location.origin
     await supabase.auth.resetPasswordForEmail(recoveryEmail.trim().toLowerCase(), {
-      redirectTo: `${appUrl}/auth/reset-password`,
+      redirectTo: `${window.location.origin}/auth/reset-password`,
     })
     setRecoveryLoading(false)
     setRecoverySent(true)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="flex flex-col items-center gap-2">
-          <div className="bg-blue-600 p-3 rounded-xl">
-            <ClipboardList className="h-8 w-8 text-white" />
+    <div className="min-h-screen flex bg-[#0a0a0a]">
+      {/* Left panel — brand */}
+      <div className="hidden lg:flex w-1/2 flex-col justify-between p-12 border-r border-white/5">
+        <Image src="/fmware-icon.svg" alt="FMWare" width={56} height={56} />
+        <div>
+          <p className="text-3xl font-bold text-white leading-snug">
+            Gestão de obras<br />e trabalho em campo.
+          </p>
+          <p className="mt-3 text-sm text-white/40">GestObra · by FMWare</p>
+        </div>
+        <p className="text-xs text-white/20">© {new Date().getFullYear()} FMWare. Todos os direitos reservados.</p>
+      </div>
+
+      {/* Right panel — form */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        {/* Mobile logo */}
+        <div className="mb-8 flex flex-col items-center gap-3 lg:hidden">
+          <Image src="/fmware-icon.svg" alt="FMWare" width={48} height={48} />
+          <div className="text-center">
+            <p className="text-lg font-bold text-white">GestObra</p>
+            <p className="text-xs text-white/40">by FMWare</p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">FichasWork</h1>
-          <p className="text-gray-500 text-sm">Gestão de trabalho em campo</p>
         </div>
 
-        <Card>
+        <div className="w-full max-w-sm">
           {!recovering ? (
             <>
-              <CardHeader>
-                <CardTitle>Entrar</CardTitle>
-                <CardDescription>Aceda à sua conta</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="email@empresa.com"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      required
-                    />
+              <div className="mb-8 lg:block hidden">
+                <h1 className="text-2xl font-bold text-white">Bem-vindo</h1>
+                <p className="text-sm text-white/40 mt-1">Inicie sessão na sua conta</p>
+              </div>
+              <div className="mb-8 lg:hidden block text-center">
+                <h1 className="text-xl font-bold text-white">Iniciar sessão</h1>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div className="space-y-1.5">
+                  <Label className="text-white/70 text-xs font-medium uppercase tracking-wide">Email</Label>
+                  <Input
+                    type="email"
+                    placeholder="email@empresa.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#FF6A1A] focus:ring-[#FF6A1A]/20 h-11"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-white/70 text-xs font-medium uppercase tracking-wide">Password</Label>
+                    <button
+                      type="button"
+                      onClick={() => { setRecovering(true); setRecoveryEmail(email); setRecoverySent(false) }}
+                      className="text-xs text-[#FF6A1A] hover:text-[#FF8A3D] transition-colors"
+                    >
+                      Esqueceu a password?
+                    </button>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Password</Label>
-                      <button
-                        type="button"
-                        onClick={() => { setRecovering(true); setRecoveryEmail(email); setRecoverySent(false) }}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        Esqueceu a password?
-                      </button>
-                    </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  {error && (
-                    <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>
-                  )}
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'A entrar...' : 'Entrar'}
-                  </Button>
-                </form>
-              </CardContent>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#FF6A1A] focus:ring-[#FF6A1A]/20 h-11"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{error}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-11 rounded-lg bg-[#FF6A1A] text-white font-semibold text-sm hover:bg-[#FF8A3D] disabled:opacity-50 transition-colors"
+                >
+                  {loading ? 'A entrar...' : 'Entrar'}
+                </button>
+              </form>
             </>
           ) : (
             <>
-              <CardHeader>
-                <CardTitle>Recuperar password</CardTitle>
-                <CardDescription>Enviaremos um link para redefinir a sua password</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {recoverySent ? (
-                  <div className="space-y-4 text-center py-2">
-                    <p className="text-sm text-gray-700">
-                      Se o email <strong>{recoveryEmail}</strong> estiver registado, receberá um link em breve.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setRecovering(false)}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Voltar ao login
-                    </button>
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold text-white">Recuperar password</h1>
+                <p className="text-sm text-white/40 mt-1">Enviaremos um link para o seu email</p>
+              </div>
+
+              {recoverySent ? (
+                <div className="space-y-4">
+                  <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-4 text-sm text-white/70">
+                    Se o email <span className="text-white font-medium">{recoveryEmail}</span> estiver registado, receberá um link em breve.
                   </div>
-                ) : (
-                  <form onSubmit={handleRecovery} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="recovery-email">Email</Label>
-                      <Input
-                        id="recovery-email"
-                        type="email"
-                        placeholder="email@empresa.com"
-                        value={recoveryEmail}
-                        onChange={e => setRecoveryEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={recoveryLoading}>
-                      {recoveryLoading ? 'A enviar...' : 'Enviar link de recuperação'}
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => setRecovering(false)}
-                      className="w-full text-sm text-gray-500 hover:text-gray-700"
-                    >
-                      Voltar ao login
-                    </button>
-                  </form>
-                )}
-              </CardContent>
+                  <button
+                    type="button"
+                    onClick={() => setRecovering(false)}
+                    className="w-full h-11 rounded-lg border border-white/10 text-white/60 text-sm font-medium hover:bg-white/5 transition-colors"
+                  >
+                    Voltar ao login
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleRecovery} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <Label className="text-white/70 text-xs font-medium uppercase tracking-wide">Email</Label>
+                    <Input
+                      type="email"
+                      placeholder="email@empresa.com"
+                      value={recoveryEmail}
+                      onChange={e => setRecoveryEmail(e.target.value)}
+                      required
+                      className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-[#FF6A1A] focus:ring-[#FF6A1A]/20 h-11"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={recoveryLoading}
+                    className="w-full h-11 rounded-lg bg-[#FF6A1A] text-white font-semibold text-sm hover:bg-[#FF8A3D] disabled:opacity-50 transition-colors"
+                  >
+                    {recoveryLoading ? 'A enviar...' : 'Enviar link de recuperação'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecovering(false)}
+                    className="w-full h-11 rounded-lg border border-white/10 text-white/60 text-sm font-medium hover:bg-white/5 transition-colors"
+                  >
+                    Voltar ao login
+                  </button>
+                </form>
+              )}
             </>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   )

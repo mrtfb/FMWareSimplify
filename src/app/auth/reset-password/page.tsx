@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { ClipboardList } from 'lucide-react'
+import Image from 'next/image'
 import { PasswordField, isPasswordStrong } from '@/components/shared/password-field'
 
 export default function ResetPasswordPage() {
@@ -57,41 +56,46 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="flex flex-col items-center gap-2">
-          <div className="bg-blue-600 p-3 rounded-xl">
-            <ClipboardList className="h-8 w-8 text-white" />
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] px-4">
+      <div className="w-full max-w-sm space-y-6">
+        <div className="flex flex-col items-center gap-3">
+          <Image src="/fmware-icon.svg" alt="FMWare" width={48} height={48} />
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-white">GestObra</h1>
+            <p className="text-white/40 text-xs mt-0.5">by FMWare</p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">FichasWork</h1>
-          <p className="text-gray-500 text-sm">Definir nova password</p>
+          <p className="text-white/60 text-sm">Definir nova password</p>
         </div>
 
-        <div className="bg-white rounded-2xl border shadow-sm p-6">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
           {sessionError ? (
             <div className="text-center space-y-3 py-2">
-              <p className="text-sm text-red-600">Link inválido ou expirado.</p>
-              <p className="text-xs text-gray-500">Peça ao administrador que envie um novo convite.</p>
+              <p className="text-sm text-red-400">Link inválido ou expirado.</p>
+              <p className="text-xs text-white/40">Peça ao administrador que envie um novo convite.</p>
             </div>
           ) : !ready ? (
-            <p className="text-sm text-gray-500 text-center py-4">A verificar sessão...</p>
+            <p className="text-sm text-white/40 text-center py-4">A verificar sessão...</p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Nova password</Label>
-                <PasswordField value={password} onChange={setPassword} showStrength />
+                <Label className="text-white/70 text-xs font-medium uppercase tracking-wide">Nova password</Label>
+                <PasswordField value={password} onChange={setPassword} showStrength dark />
               </div>
               <div className="space-y-1.5">
-                <Label>Confirmar password</Label>
-                <PasswordField value={confirm} onChange={setConfirm} />
+                <Label className="text-white/70 text-xs font-medium uppercase tracking-wide">Confirmar password</Label>
+                <PasswordField value={confirm} onChange={setConfirm} dark />
                 {confirm.length > 0 && password !== confirm && (
-                  <p className="text-xs text-red-500">As passwords não coincidem.</p>
+                  <p className="text-xs text-red-400">As passwords não coincidem.</p>
                 )}
               </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading || !isPasswordStrong(password) || password !== confirm}>
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <button
+                type="submit"
+                disabled={loading || !isPasswordStrong(password) || password !== confirm}
+                className="w-full h-11 rounded-lg bg-[#FF6A1A] text-white font-semibold text-sm hover:bg-[#FF8A3D] disabled:opacity-40 transition-colors"
+              >
                 {loading ? 'A guardar...' : 'Definir password e entrar'}
-              </Button>
+              </button>
             </form>
           )}
         </div>

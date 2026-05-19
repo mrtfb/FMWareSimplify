@@ -12,7 +12,7 @@ export async function sendEmail({
     console.warn('[email] RESEND_API_KEY not set, skipping')
     return
   }
-  const from = process.env.RESEND_FROM ?? 'FichasWork <onboarding@resend.dev>'
+  const from = process.env.RESEND_FROM ?? 'GestObra <onboarding@resend.dev>'
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -40,7 +40,7 @@ export function workerWelcomeHtml({
 }) {
   return `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
-      <h2 style="color:#1d4ed8;margin-bottom:4px">Bem-vindo ao FichasWork!</h2>
+      <h2 style="color:#FF6A1A;margin-bottom:4px">Bem-vindo ao GestObra!</h2>
       <p style="color:#6b7280;margin-top:0">A sua conta foi criada pelo gestor.</p>
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:24px 0">
         <p style="margin:0 0 8px"><strong>Email:</strong> ${email}</p>

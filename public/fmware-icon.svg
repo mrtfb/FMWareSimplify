@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FMWARE icon mark">
+  <title>FMWARE — Icon Mark</title>
+
+  <defs>
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded chip body -->
+  <rect x="32" y="32" width="448" height="448" rx="72" fill="url(#iconBg)"
+        stroke="#FF6A1A" stroke-width="10"/>
+
+  <!-- Chip pins (top, bottom, left, right) -->
+  <g fill="#FF6A1A">
+    <!-- Top pins -->
+    <rect x="160" y="0"  width="22" height="32" rx="3"/>
+    <rect x="200" y="0"  width="22" height="32" rx="3"/>
+    <rect x="245" y="0"  width="22" height="32" rx="3"/>
+    <rect x="290" y="0"  width="22" height="32" rx="3"/>
+    <rect x="330" y="0"  width="22" height="32" rx="3"/>
+    <!-- Bottom pins -->
+    <rect x="160" y="480" width="22" height="32" rx="3"/>
+    <rect x="200" y="480" width="22" height="32" rx="3"/>
+    <rect x="245" y="480" width="22" height="32" rx="3"/>
+    <rect x="290" y="480" width="22" height="32" rx="3"/>
+    <rect x="330" y="480" width="22" height="32" rx="3"/>
+    <!-- Left pins -->
+    <rect x="0" y="160" width="32" height="22" rx="3"/>
+    <rect x="0" y="200" width="32" height="22" rx="3"/>
+    <rect x="0" y="245" width="32" height="22" rx="3"/>
+    <rect x="0" y="290" width="32" height="22" rx="3"/>
+    <rect x="0" y="330" width="32" height="22" rx="3"/>
+    <!-- Right pins -->
+    <rect x="480" y="160" width="32" height="22" rx="3"/>
+    <rect x="480" y="200" width="32" height="22" rx="3"/>
+    <rect x="480" y="245" width="32" height="22" rx="3"/>
+    <rect x="480" y="290" width="32" height="22" rx="3"/>
+    <rect x="480" y="330" width="32" height="22" rx="3"/>
+  </g>
+
+  <!-- "FM" monogram, centered, bold -->
+  <text x="256" y="330"
+        font-family="'Helvetica Neue', 'Arial Black', 'Inter', sans-serif"
+        font-weight="900"
+        font-size="220"
+        letter-spacing="-6"
+        text-anchor="middle"
+        fill="#ffffff">FM</text>
+
+  <!-- Orange accent underline -->
+  <rect x="156" y="358" width="200" height="8" rx="4" fill="#FF6A1A"/>
+</svg>

@@ -67,11 +67,11 @@ export function Sidebar({ role, userName, orgName, orgLogo }: SidebarProps) {
           )}
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold tracking-tight">
-              {orgName ?? 'FichasWork'}
+              {orgName ?? 'GestObra'}
             </div>
             {orgName && (
               <div className="font-mono text-[10px] uppercase tracking-[0.04em] text-mute">
-                FichasWork
+                GestObra
               </div>
             )}
           </div>

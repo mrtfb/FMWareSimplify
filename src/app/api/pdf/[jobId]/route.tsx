@@ -94,7 +94,7 @@ function ReportPageHeader({ jobTitle, clientName }: { jobTitle: string; clientNa
         <Text style={s.pageHeaderTitle}>{jobTitle}</Text>
         {clientName && <Text style={s.pageHeaderSub}>{clientName}</Text>}
       </View>
-      <Text style={s.pageHeaderLogo}>FichasWork</Text>
+      <Text style={s.pageHeaderLogo}>GestObra</Text>
     </View>
   )
 }
@@ -155,12 +155,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   let pdf: Buffer
   try {
     pdf = await renderToBuffer(
-      <Document title={`Relatório — ${job.title}`} author="FichasWork">
+      <Document title={`Relatório — ${job.title}`} author="GestObra">
         {/* ── Cover / Summary page ─────────────────────────────── */}
         <Page size="A4" style={s.page}>
           <View style={s.coverHeader}>
             <Text style={s.coverTitle}>Relatório de Trabalho</Text>
-            <Text style={s.coverSubtitle}>FichasWork — gerado em {new Date().toLocaleDateString('pt-PT')}</Text>
+            <Text style={s.coverSubtitle}>GestObra — gerado em {new Date().toLocaleDateString('pt-PT')}</Text>
           </View>
 
           <View style={s.coverMeta}>
