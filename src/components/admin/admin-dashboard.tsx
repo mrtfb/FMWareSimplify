@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import { pt as ptPT } from 'date-fns/locale'
 import { Building2, Users, Briefcase, Plus, Pencil, ShieldCheck, Mail, LogOut } from 'lucide-react'
+import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { signOut } from '@/app/auth/actions'
 import { Input } from '@/components/ui/input'
@@ -121,6 +122,7 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
             <Plus className="h-4 w-4 mr-2" />
             Nova organização
           </Button>
+          <ThemeToggle className="p-2 rounded-md text-mute hover:text-ink-2 hover:bg-raise" />
           <form action={signOut}>
             <button type="submit" className="p-2 rounded-md text-mute hover:text-ink-2 hover:bg-raise transition-colors" title="Sair">
               <LogOut className="h-4 w-4" />
