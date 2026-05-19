@@ -50,22 +50,29 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex bg-[#0a0a0a]">
       {/* Left panel — brand */}
-      <div className="hidden lg:flex w-1/2 flex-col justify-between p-12 border-r border-white/5">
-        <Image src="/fmware-icon.svg" alt="FMWare" width={56} height={56} />
-        <div>
-          <p className="text-3xl font-bold text-white leading-snug">
-            Gestão de obras<br />e trabalho em campo.
-          </p>
-          <p className="mt-3 text-sm text-white/40">GestObra · by FMWare</p>
+      <div className="hidden lg:flex w-1/2 flex-col items-center justify-between py-16 px-12 border-r border-white/5">
+        <div className="flex-1 flex items-center justify-center w-full">
+          <Image
+            src="/fmware-logo.svg"
+            alt="FMWare"
+            width={480}
+            height={280}
+            className="w-full max-w-md"
+            priority
+          />
         </div>
-        <p className="text-xs text-white/20">© {new Date().getFullYear()} FMWare. Todos os direitos reservados.</p>
+        <div className="text-center space-y-1">
+          <p className="text-sm font-semibold text-white tracking-wide">GestObra</p>
+          <p className="text-xs text-white/30">Gestão de obras e trabalho em campo</p>
+          <p className="text-xs text-white/15 pt-2">© {new Date().getFullYear()} FMWare</p>
+        </div>
       </div>
 
       {/* Right panel — form */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
         {/* Mobile logo */}
         <div className="mb-8 flex flex-col items-center gap-3 lg:hidden">
-          <Image src="/fmware-icon.svg" alt="FMWare" width={48} height={48} />
+          <Image src="/fmware-icon.svg" alt="FMWare" width={52} height={52} priority />
           <div className="text-center">
             <p className="text-lg font-bold text-white">GestObra</p>
             <p className="text-xs text-white/40">by FMWare</p>

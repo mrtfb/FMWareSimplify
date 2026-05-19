@@ -7,6 +7,13 @@ const geist = Geist({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'GestObra',
   description: 'Gestão de obras e trabalho em campo',
+  icons: {
+    icon: [
+      { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: { url: '/favicon-192.png', sizes: '192x192', type: 'image/png' },
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
