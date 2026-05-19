@@ -50,21 +50,39 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex bg-[#0a0a0a]">
       {/* Left panel — brand */}
-      <div className="hidden lg:flex w-1/2 flex-col items-center justify-between py-16 px-12 border-r border-white/5">
-        <div className="flex-1 flex items-center justify-center w-full">
+      <div className="hidden lg:flex w-1/2 flex-col justify-between py-14 px-14 border-r border-white/5">
+        {/* Marketing copy */}
+        <div className="flex-1 flex flex-col justify-center space-y-6">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold tracking-[0.2em] text-[#FF6A1A] uppercase">GestObra · by FMWare</p>
+          </div>
+          <h2 className="text-4xl font-bold text-white leading-tight">
+            Todas as obras.<br />Toda a equipa.<br />Num só lugar.
+          </h2>
+          <p className="text-white/40 text-base leading-relaxed max-w-sm">
+            Registe fichas diárias, gere trabalhos e exporte relatórios PDF — do escritório ou do telemóvel.
+          </p>
+          <div className="flex flex-col gap-2 pt-2">
+            {['Fichas diárias com fotos e assinaturas', 'Agenda e gestão de equipa', 'Relatórios PDF automáticos'].map(item => (
+              <div key={item} className="flex items-center gap-2.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#FF6A1A] shrink-0" />
+                <span className="text-sm text-white/50">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Logo smaller at bottom */}
+        <div className="pt-10">
           <Image
             src="/fmware-logo.svg"
             alt="FMWare"
-            width={480}
-            height={280}
-            className="w-full max-w-md"
+            width={280}
+            height={163}
+            className="w-56 opacity-80"
             priority
           />
-        </div>
-        <div className="text-center space-y-1">
-          <p className="text-sm font-semibold text-white tracking-wide">GestObra</p>
-          <p className="text-xs text-white/30">Gestão de obras e trabalho em campo</p>
-          <p className="text-xs text-white/15 pt-2">© {new Date().getFullYear()} FMWare</p>
+          <p className="text-xs text-white/15 mt-3">© {new Date().getFullYear()} FMWare. Todos os direitos reservados.</p>
         </div>
       </div>
 
