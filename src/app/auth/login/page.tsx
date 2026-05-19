@@ -16,6 +16,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const [recovering, setRecovering] = useState(false)
+  const [recoveryEmail, setRecoveryEmail] = useState('')
+  const [recoverySent, setRecoverySent] = useState(false)
+  const [recoveryLoading, setRecoveryLoading] = useState(false)
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -45,6 +50,18 @@ export default function LoginPage() {
     }
   }
 
+  async function handleRecovery(e: React.FormEvent) {
+    e.preventDefault()
+    setRecoveryLoading(true)
+    const supabase = createClient()
+    const appUrl = window.location.origin
+    await supabase.auth.resetPasswordForEmail(recoveryEmail.trim().toLowerCase(), {
+      redirectTo: `${appUrl}/auth/reset-password`,
+    })
+    setRecoveryLoading(false)
+    setRecoverySent(true)
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md space-y-6">
@@ -57,42 +74,102 @@ export default function LoginPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Entrar</CardTitle>
-            <CardDescription>Aceda à sua conta</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@empresa.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>
-              )}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'A entrar...' : 'Entrar'}
-              </Button>
-            </form>
-          </CardContent>
+          {!recovering ? (
+            <>
+              <CardHeader>
+                <CardTitle>Entrar</CardTitle>
+                <CardDescription>Aceda à sua conta</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="email@empresa.com"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Password</Label>
+                      <button
+                        type="button"
+                        onClick={() => { setRecovering(true); setRecoveryEmail(email); setRecoverySent(false) }}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Esqueceu a password?
+                      </button>
+                    </div>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {error && (
+                    <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>
+                  )}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'A entrar...' : 'Entrar'}
+                  </Button>
+                </form>
+              </CardContent>
+            </>
+          ) : (
+            <>
+              <CardHeader>
+                <CardTitle>Recuperar password</CardTitle>
+                <CardDescription>Enviaremos um link para redefinir a sua password</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {recoverySent ? (
+                  <div className="space-y-4 text-center py-2">
+                    <p className="text-sm text-gray-700">
+                      Se o email <strong>{recoveryEmail}</strong> estiver registado, receberá um link em breve.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setRecovering(false)}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      Voltar ao login
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleRecovery} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="recovery-email">Email</Label>
+                      <Input
+                        id="recovery-email"
+                        type="email"
+                        placeholder="email@empresa.com"
+                        value={recoveryEmail}
+                        onChange={e => setRecoveryEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={recoveryLoading}>
+                      {recoveryLoading ? 'A enviar...' : 'Enviar link de recuperação'}
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setRecovering(false)}
+                      className="w-full text-sm text-gray-500 hover:text-gray-700"
+                    >
+                      Voltar ao login
+                    </button>
+                  </form>
+                )}
+              </CardContent>
+            </>
+          )}
         </Card>
       </div>
     </div>
