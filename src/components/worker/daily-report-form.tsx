@@ -258,7 +258,7 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
           )}
         </div>
 
-        {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
+        {error && <p className="text-sm text-red-400 bg-red-500/10 p-2 rounded border border-red-500/20">{error}</p>}
 
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />A guardar...</> : 'Guardar Ficha'}

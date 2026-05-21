@@ -51,7 +51,11 @@ export function WorkerJobDetail({ job, dailyReports, jobReports, userId, team }:
             <p className="font-semibold text-sm">{client.name}</p>
             {client.address && <p className="text-sm text-mute flex items-center gap-1.5"><MapPin className="h-4 w-4" />{client.address}</p>}
             {client.contact_name && <p className="text-sm text-mute flex items-center gap-1.5"><User className="h-4 w-4" />{client.contact_name}</p>}
-            {client.contact_phone && <p className="text-sm text-mute flex items-center gap-1.5"><Phone className="h-4 w-4" />{client.contact_phone}</p>}
+            {client.contact_phone && (
+              <a href={`tel:${client.contact_phone}`} className="text-sm text-mute flex items-center gap-1.5 hover:text-primary transition-colors">
+                <Phone className="h-4 w-4" />{client.contact_phone}
+              </a>
+            )}
           </CardContent>
         </Card>
       )}
@@ -73,8 +77,7 @@ export function WorkerJobDetail({ job, dailyReports, jobReports, userId, team }:
 
       {/* Action buttons */}
       <div className="grid grid-cols-1 gap-3">
-        <div className="p-4 rounded-xl border-2 flex items-center justify-between gap-3"
-          style={{ borderColor: startReport ? '#22c55e' : '#e5e7eb' }}>
+        <div className={`p-4 rounded-xl border-2 flex items-center justify-between gap-3 ${startReport ? 'border-green-500' : 'border-border'}`}>
           <div className="flex items-center gap-3">
             {startReport
               ? <CheckCircle className="h-5 w-5 text-green-500" />
@@ -94,9 +97,9 @@ export function WorkerJobDetail({ job, dailyReports, jobReports, userId, team }:
         </div>
 
         <Link href={`/worker/jobs/${job.id}/daily/new`} className="block">
-          <div className="p-4 rounded-xl border-2 border-blue-200 bg-blue-50 flex items-center justify-between gap-3 hover:bg-blue-100 transition-colors cursor-pointer">
+          <div className="p-4 rounded-xl border-2 border-primary/40 bg-primary/10 flex items-center justify-between gap-3 hover:bg-primary/15 transition-colors cursor-pointer">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-600 rounded-full p-1">
+              <div className="bg-primary rounded-full p-1">
                 <Plus className="h-4 w-4 text-white" />
               </div>
               <div>
@@ -104,12 +107,11 @@ export function WorkerJobDetail({ job, dailyReports, jobReports, userId, team }:
                 <p className="text-xs text-mute">{dailyReports.length} ficha{dailyReports.length !== 1 ? 's' : ''} preenchida{dailyReports.length !== 1 ? 's' : ''}</p>
               </div>
             </div>
-            <FileText className="h-5 w-5 text-blue-600" />
+            <FileText className="h-5 w-5 text-primary" />
           </div>
         </Link>
 
-        <div className="p-4 rounded-xl border-2 flex items-center justify-between gap-3"
-          style={{ borderColor: finishReport ? '#22c55e' : '#e5e7eb' }}>
+        <div className={`p-4 rounded-xl border-2 flex items-center justify-between gap-3 ${finishReport ? 'border-green-500' : 'border-border'}`}>
           <div className="flex items-center gap-3">
             {finishReport
               ? <CheckCircle className="h-5 w-5 text-green-500" />

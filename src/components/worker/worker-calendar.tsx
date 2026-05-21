@@ -104,8 +104,8 @@ export function WorkerCalendar({ jobs }: WorkerCalendarProps) {
                 onClick={() => setSelectedDate(dateStr)}
                 className={[
                   'min-h-[64px] border-r border-b p-1 text-left w-full transition-colors',
-                  isSelected ? 'bg-blue-50 ring-2 ring-inset ring-blue-400' : 'hover:bg-background',
-                  isToday && !isSelected ? 'bg-blue-50' : '',
+                  isSelected ? 'bg-primary/10 ring-2 ring-inset ring-primary/50' : 'hover:bg-raise',
+                  isToday && !isSelected ? 'bg-primary/5' : '',
                 ].join(' ')}
               >
                 <p className={[

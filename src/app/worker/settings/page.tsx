@@ -5,7 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { PasswordField, isPasswordStrong } from '@/components/shared/password-field'
-import { KeyRound } from 'lucide-react'
+import { ThemeToggle } from '@/components/shared/theme-toggle'
+import { KeyRound, LogOut, Sun } from 'lucide-react'
+import { signOut } from '@/app/auth/actions'
 
 export default function WorkerSettingsPage() {
   const [password, setPassword] = useState('')
@@ -43,12 +45,13 @@ export default function WorkerSettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-md space-y-8">
+    <div className="p-6 max-w-md space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-ink">Definições</h1>
+        <h1 className="text-2xl font-bold text-ink">Conta</h1>
         <p className="text-sm text-mute mt-1">Configurações da sua conta</p>
       </div>
 
+      {/* Password */}
       <div className="bg-card rounded-xl border p-6 space-y-5">
         <div className="flex items-center gap-3">
           <div className="bg-amber-soft p-2 rounded-lg">
@@ -83,6 +86,33 @@ export default function WorkerSettingsPage() {
           >
             {loading ? 'A guardar...' : 'Guardar password'}
           </Button>
+        </form>
+      </div>
+
+      {/* Theme */}
+      <div className="bg-card rounded-xl border p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-amber-soft p-2 rounded-lg">
+            <Sun className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-semibold text-ink text-sm">Aparência</p>
+            <p className="text-xs text-mute">Modo claro ou escuro</p>
+          </div>
+        </div>
+        <ThemeToggle className="p-2 rounded-lg bg-raise text-ink-2 hover:text-ink" />
+      </div>
+
+      {/* Logout */}
+      <div className="bg-card rounded-xl border overflow-hidden">
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="w-full flex items-center gap-3 p-4 text-red-500 hover:bg-red-500/10 transition-colors"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="font-medium">Terminar sessão</span>
+          </button>
         </form>
       </div>
     </div>
