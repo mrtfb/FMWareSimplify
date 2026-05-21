@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft, Pencil, Trash2, AlertTriangle, FileDown, Loader2 } from 'lucide-react'
+import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft, Pencil, Trash2, AlertTriangle, FileDown, Loader2, Plus, FileText } from 'lucide-react'
 import type { Job, DailyReport, JobReport } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -25,6 +25,7 @@ interface JobDetailProps {
   clients: { id: string; name: string }[]
   allWorkers: { id: string; full_name: string }[]
   organizationId: string
+  currentUserId: string
   dailyReports: (DailyReport & { worker?: { full_name: string }; media?: { public_url: string; caption: string | null }[] })[]
   jobReports: (JobReport & { worker?: { full_name: string }; media?: { public_url: string; caption: string | null }[] })[]
 }
@@ -36,13 +37,17 @@ const STATUS_OPTIONS: { value: Job['status']; label: string }[] = [
   { value: 'cancelled',   label: 'Cancelado' },
 ]
 
-export function JobDetail({ job, workers, clients, allWorkers, organizationId, dailyReports, jobReports }: JobDetailProps) {
+export function JobDetail({ job, workers, clients, allWorkers, organizationId, currentUserId, dailyReports, jobReports }: JobDetailProps) {
   const router = useRouter()
   const supabase = createClient()
 
   const client = job.client as { name: string; address: string | null } | null
   const startReport = jobReports.find(r => r.report_type === 'start')
   const finishReport = jobReports.find(r => r.report_type === 'finish')
+  const isAssigned = workers.some(w => w.id === currentUserId)
+  const myStartReport = jobReports.find(r => r.report_type === 'start' && r.worker_id === currentUserId)
+  const myFinishReport = jobReports.find(r => r.report_type === 'finish' && r.worker_id === currentUserId)
+  const myDailyCount = dailyReports.filter(r => r.worker_id === currentUserId).length
 
   // ── Edit state ───────────────────────────────────────────────────────────
   const [editOpen, setEditOpen] = useState(false)
@@ -237,6 +242,57 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, d
         <StatusCard label="Fichas Diárias" count={dailyReports.length} />
         <StatusCard label="Ficha de Fim" report={finishReport} />
       </div>
+
+      {/* My actions — visible only when manager is assigned to this job */}
+      {isAssigned && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <p className="text-xs font-semibold text-primary uppercase tracking-wide">As minhas fichas</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Link href={`/worker/jobs/${job.id}/start`}>
+              <div className={`p-3 rounded-lg border-2 flex items-center justify-between gap-2 transition-colors hover:bg-raise ${myStartReport ? 'border-green-500/50' : 'border-border'}`}>
+                <div className="flex items-center gap-2">
+                  {myStartReport
+                    ? <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                    : <AlertCircle className="h-4 w-4 text-mute shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium">Ficha de Início</p>
+                    <p className="text-xs text-mute">{myStartReport ? format(new Date(myStartReport.report_date), 'dd/MM/yyyy') : 'Por preencher'}</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            <Link href={`/worker/jobs/${job.id}/daily/new`}>
+              <div className="p-3 rounded-lg border-2 border-primary/40 bg-primary/10 flex items-center justify-between gap-2 hover:bg-primary/15 transition-colors cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <div className="bg-primary rounded-full p-0.5">
+                    <Plus className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Nova Ficha Diária</p>
+                    <p className="text-xs text-mute">{myDailyCount} ficha{myDailyCount !== 1 ? 's' : ''} minhas</p>
+                  </div>
+                </div>
+                <FileText className="h-4 w-4 text-primary" />
+              </div>
+            </Link>
+
+            <Link href={`/worker/jobs/${job.id}/finish`}>
+              <div className={`p-3 rounded-lg border-2 flex items-center justify-between gap-2 transition-colors hover:bg-raise ${myFinishReport ? 'border-green-500/50' : 'border-border'}`}>
+                <div className="flex items-center gap-2">
+                  {myFinishReport
+                    ? <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                    : <AlertCircle className="h-4 w-4 text-mute shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium">Ficha de Fim</p>
+                    <p className="text-xs text-mute">{myFinishReport ? format(new Date(myFinishReport.report_date), 'dd/MM/yyyy') : 'Por preencher'}</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="daily">

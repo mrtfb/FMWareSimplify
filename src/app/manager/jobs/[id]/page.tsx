@@ -41,6 +41,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       clients={clients ?? []}
       allWorkers={allWorkers ?? []}
       organizationId={orgId ?? ''}
+      currentUserId={user!.id}
     />
   )
 }
