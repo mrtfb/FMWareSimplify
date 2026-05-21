@@ -69,8 +69,8 @@ export function ClientsTable({ clients, organizationId }: ClientsTableProps) {
   }
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ink">Clientes</h1>
           <p className="text-mute text-sm mt-1">{clients.length} cliente{clients.length !== 1 ? 's' : ''}</p>
@@ -92,7 +92,7 @@ export function ClientsTable({ clients, organizationId }: ClientsTableProps) {
                 <Label>Morada</Label>
                 <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Rua, nº, cidade" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label>Contacto</Label>
                   <Input value={form.contact_name} onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))} placeholder="Nome do contacto" />
@@ -125,7 +125,7 @@ export function ClientsTable({ clients, organizationId }: ClientsTableProps) {
         placeholder="Pesquisar clientes..."
         value={search}
         onChange={e => setSearch(e.target.value)}
-        className="max-w-sm"
+        className="w-full max-w-sm"
       />
 
       {filtered.length === 0 ? (

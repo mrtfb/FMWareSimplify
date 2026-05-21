@@ -58,7 +58,8 @@ export function JobsTable({ jobs, workers, jobWorkers, onEdit }: JobsTableProps)
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
+    <div className="overflow-x-auto rounded-xl border border-border bg-card">
+    <div className="min-w-[640px]">
       {/* Column header */}
       <div className="grid items-center gap-2 border-b border-border bg-raise px-5 py-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-mute"
         style={{ gridTemplateColumns: '1.6fr 1fr 110px 110px 140px 60px' }}
@@ -138,6 +139,7 @@ export function JobsTable({ jobs, workers, jobWorkers, onEdit }: JobsTableProps)
           )
         })
       )}
+    </div>
     </div>
   )
 }

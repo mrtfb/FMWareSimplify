@@ -57,7 +57,7 @@ export function WorkersTable({ workers, organizationId }: WorkersTableProps) {
 
   return (
     <div className="p-4 md:p-8 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ink">Trabalhadores</h1>
           <p className="text-mute text-sm mt-1">{workers.length} trabalhador{workers.length !== 1 ? 'es' : ''}</p>

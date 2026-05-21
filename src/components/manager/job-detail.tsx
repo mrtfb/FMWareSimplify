@@ -157,7 +157,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
     .join(', ')
 
   return (
-    <div className="p-8 space-y-6 max-w-4xl">
+    <div className="p-4 md:p-8 space-y-6 max-w-4xl">
 
       {/* Top bar */}
       <div className="flex items-center justify-between gap-4">
@@ -384,7 +384,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
               <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Morada do trabalho" />
             </div>
 
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="space-y-1">
                 <Label>Data início</Label>
                 <Input type="date" value={form.scheduled_date} onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} />

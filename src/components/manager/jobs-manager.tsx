@@ -281,7 +281,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
         <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Morada do trabalho" />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="space-y-1">
           <Label>Data início</Label>
           <Input type="date" value={form.scheduled_date} onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} />
@@ -362,13 +362,13 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
   )
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ink">Trabalhos</h1>
           <p className="text-mute text-sm mt-1">{filteredJobs.length} de {jobs.length} trabalho{jobs.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex overflow-hidden rounded-md border border-border">
             <button className="px-3 py-1.5 text-xs text-mute hover:bg-background" onClick={() => router.push('/manager/schedule')}>Equipa</button>
             <button className="bg-gray-900 text-white px-3 py-1.5 text-xs font-medium">Lista</button>
@@ -387,7 +387,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-mute" />
           <Input
             placeholder="Pesquisar título, cliente, trabalhador..."
@@ -397,7 +397,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
           />
         </div>
         <Select value={filterStatus} onValueChange={v => setFilterStatus(v ?? 'all')}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <span className="text-sm">{filterStatus === 'all' ? 'Todos os estados' : statusConfig[filterStatus as keyof typeof statusConfig]?.label}</span>
           </SelectTrigger>
           <SelectContent>
@@ -408,7 +408,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
           </SelectContent>
         </Select>
         <Select value={filterClient} onValueChange={v => setFilterClient(v ?? 'all')}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-full sm:w-44">
             <span className="text-sm truncate">{filterClient === 'all' ? 'Todos os clientes' : clients.find(c => c.id === filterClient)?.name ?? 'Cliente'}</span>
           </SelectTrigger>
           <SelectContent>

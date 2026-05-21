@@ -94,7 +94,7 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
   }, [jobs, days])
 
   return (
-    <div className="flex h-full flex-col p-8">
+    <div className="flex h-full flex-col p-4 md:p-8">
       {/* Header */}
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -138,7 +138,8 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
       </div>
 
       {/* Grid */}
-      <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
+      <div className="flex flex-col min-w-[860px]">
         {/* Day headers */}
         <div
           className="grid border-b border-border"
@@ -283,6 +284,7 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
               </div>
             )
           })}
+        </div>
         </div>
       </div>
 
