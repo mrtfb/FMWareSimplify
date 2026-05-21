@@ -54,7 +54,7 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
   })
   const [photos, setPhotos] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState('')
   const [error, setError] = useState('')
 
   function handleTimeChange(field: 'time_start' | 'time_end', value: string) {
@@ -85,7 +85,7 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.description.trim()) { setError('A descrição é obrigatória'); return }
-    setLoading(true)
+    setStatus('A guardar ficha...')
     setError('')
 
     const payload = {
@@ -107,7 +107,7 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
         .from('daily_reports')
         .update(payload)
         .eq('id', existingReport.id)
-      if (updateError) { setError('Erro ao guardar ficha'); setLoading(false); return }
+      if (updateError) { setError('Erro ao guardar ficha'); setStatus(''); return }
       reportId = existingReport.id
     } else {
       const { data: report, error: reportError } = await supabase
@@ -115,21 +115,29 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
         .insert(payload)
         .select()
         .single()
-      if (reportError) { setError('Erro ao guardar ficha'); setLoading(false); return }
+      if (reportError) { setError('Erro ao guardar ficha'); setStatus(''); return }
       reportId = report.id
     }
 
-    for (const photo of photos) {
-      const ext = photo.name.split('.').pop()
-      const path = `daily/${reportId}/${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage.from('reports').upload(path, photo)
-      if (uploadError) {
-        setError(`Erro ao guardar foto: ${uploadError.message}`)
-        setLoading(false)
+    if (photos.length > 0) {
+      setStatus(`A carregar ${photos.length} foto${photos.length > 1 ? 's' : ''}...`)
+      const results = await Promise.all(
+        photos.map(async (photo, i) => {
+          const ext = photo.name.split('.').pop()
+          const path = `daily/${reportId}/${Date.now()}_${i}.${ext}`
+          const { error: uploadError } = await supabase.storage.from('reports').upload(path, photo)
+          if (uploadError) return { error: uploadError }
+          const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
+          await supabase.from('media').insert({ daily_report_id: reportId, storage_path: path, public_url: publicUrl })
+          return { path }
+        })
+      )
+      const failed = results.find(r => r.error)
+      if (failed?.error) {
+        setError(`Erro ao carregar foto: ${failed.error.message}`)
+        setStatus('')
         return
       }
-      const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
-      await supabase.from('media').insert({ daily_report_id: reportId, storage_path: path, public_url: publicUrl })
     }
 
     router.push(`/worker/jobs/${jobId}`)
@@ -260,8 +268,8 @@ export function DailyReportForm({ jobId, jobTitle, userId, existingReport }: Dai
 
         {error && <p className="text-sm text-red-400 bg-red-500/10 p-2 rounded border border-red-500/20">{error}</p>}
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />A guardar...</> : 'Guardar Ficha'}
+        <Button type="submit" className="w-full" disabled={!!status}>
+          {status ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{status}</> : 'Guardar Ficha'}
         </Button>
       </form>
     </div>

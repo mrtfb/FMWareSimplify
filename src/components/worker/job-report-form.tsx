@@ -48,7 +48,7 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
   })
   const [photos, setPhotos] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState('')
   const [error, setError] = useState('')
 
   const title = isStart ? 'Ficha de Início' : 'Ficha de Fim'
@@ -74,20 +74,20 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
+    setStatus('A guardar...')
     setError('')
 
     let signatureUrl = existingReport?.client_signature_url ?? null
 
-    // Upload signature if drawn
     if (sigRef.current && !sigRef.current.isEmpty()) {
+      setStatus('A guardar assinatura...')
       const dataUrl = sigRef.current.toDataURL()
       const blob = await fetch(dataUrl).then(r => r.blob())
       const path = `signatures/${jobId}/${reportType}_${Date.now()}.png`
       const { error: sigError } = await supabase.storage.from('reports').upload(path, blob, { contentType: 'image/png' })
       if (sigError) {
         setError(`Erro ao guardar assinatura: ${sigError.message}`)
-        setLoading(false)
+        setStatus('')
         return
       }
       const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
@@ -115,7 +115,7 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
         .eq('id', existingReport.id)
         .select()
         .single()
-      if (updateError) { setError('Erro ao guardar'); setLoading(false); return }
+      if (updateError) { setError('Erro ao guardar'); setStatus(''); return }
       reportId = data.id
     } else {
       const { data, error: insertError } = await supabase
@@ -123,10 +123,9 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
         .insert(payload)
         .select()
         .single()
-      if (insertError) { setError('Erro ao guardar'); setLoading(false); return }
+      if (insertError) { setError('Erro ao guardar'); setStatus(''); return }
       reportId = data.id
 
-      // Update job status
       if (isStart) {
         await supabase.from('jobs').update({ status: 'in_progress' }).eq('id', jobId)
       } else {
@@ -134,17 +133,25 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
       }
     }
 
-    for (const photo of photos) {
-      const ext = photo.name.split('.').pop()
-      const path = `job-reports/${reportId}/${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage.from('reports').upload(path, photo)
-      if (uploadError) {
-        setError(`Erro ao guardar foto: ${uploadError.message}`)
-        setLoading(false)
+    if (photos.length > 0) {
+      setStatus(`A carregar ${photos.length} foto${photos.length > 1 ? 's' : ''}...`)
+      const results = await Promise.all(
+        photos.map(async (photo, i) => {
+          const ext = photo.name.split('.').pop()
+          const path = `job-reports/${reportId}/${Date.now()}_${i}.${ext}`
+          const { error: uploadError } = await supabase.storage.from('reports').upload(path, photo)
+          if (uploadError) return { error: uploadError }
+          const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
+          await supabase.from('media').insert({ job_report_id: reportId, storage_path: path, public_url: publicUrl })
+          return { path }
+        })
+      )
+      const failed = results.find(r => r.error)
+      if (failed?.error) {
+        setError(`Erro ao carregar foto: ${failed.error.message}`)
+        setStatus('')
         return
       }
-      const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
-      await supabase.from('media').insert({ job_report_id: reportId, storage_path: path, public_url: publicUrl })
     }
 
     router.push(`/worker/jobs/${jobId}`)
@@ -272,8 +279,8 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
 
         {error && <p className="text-sm text-red-400 bg-red-500/10 p-2 rounded border border-red-500/20">{error}</p>}
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />A guardar...</> : `Guardar ${title}`}
+        <Button type="submit" className="w-full" disabled={!!status}>
+          {status ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{status}</> : `Guardar ${title}`}
         </Button>
       </form>
     </div>
