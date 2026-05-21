@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pt as ptPT } from 'date-fns/locale'
-import { Briefcase, CalendarDays, ChevronRight, MapPin, Clock, ClipboardList, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Briefcase, CalendarDays, ChevronRight, MapPin, Clock, CheckCircle2, LogOut } from 'lucide-react'
+import { signOut } from '@/app/auth/actions'
 
 const statusConfig = {
   pending:     { label: 'Pendente',  color: 'bg-yellow-500/15 text-yellow-400' },
@@ -174,6 +175,30 @@ export default async function WorkerHomePage() {
               <span className="text-[11px] text-mute">Agenda mensal</span>
             </div>
           </Link>
+        </div>
+      </div>
+
+      {/* User + logout */}
+      <div className="bg-card rounded-xl border overflow-hidden">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-soft font-mono text-sm font-semibold text-ink">
+              {profile.full_name.split(/\s+/).slice(0, 2).map((p: string) => p[0]?.toUpperCase()).join('')}
+            </span>
+            <div>
+              <p className="text-sm font-medium text-ink">{profile.full_name}</p>
+              <p className="text-xs text-mute">Técnico</p>
+            </div>
+          </div>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="flex items-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors py-2 px-3 rounded-lg hover:bg-red-500/10"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </button>
+          </form>
         </div>
       </div>
     </div>
