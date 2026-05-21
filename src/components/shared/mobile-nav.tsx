@@ -17,6 +17,7 @@ const managerItems = [
 ]
 
 const workerItems = [
+  { href: '/worker',           label: 'Hoje',       icon: LayoutDashboard },
   { href: '/worker/jobs',      label: 'Trabalhos',  icon: Briefcase },
   { href: '/worker/calendar',  label: 'Calendário', icon: CalendarDays },
   { href: '/worker/settings',  label: 'Conta',      icon: KeyRound },
