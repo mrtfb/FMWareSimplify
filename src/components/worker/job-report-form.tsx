@@ -11,6 +11,24 @@ import { ChevronLeft, Camera, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { SignaturePad, type SignaturePadRef } from './signature-pad'
 
+// Fire-and-forget, but log the real reason on failure — a silent 401/403/500
+// here means the client never gets their signed start/finish report.
+async function notifyClient(jobReportId: string) {
+  try {
+    const res = await fetch('/api/jobs/notify-client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_report_id: jobReportId }),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      console.error('[notify-client] failed to email client:', res.status, body.error ?? body)
+    }
+  } catch (err) {
+    console.error('[notify-client] request failed:', err)
+  }
+}
+
 interface JobReportFormProps {
   jobId: string
   jobTitle: string
@@ -131,6 +149,8 @@ export function JobReportForm({ jobId, jobTitle, clientName, userId, reportType,
       } else {
         await supabase.from('jobs').update({ status: 'completed' }).eq('id', jobId)
       }
+
+      notifyClient(reportId)
     }
 
     if (photos.length > 0) {
