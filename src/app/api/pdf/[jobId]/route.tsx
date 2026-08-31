@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
-import { imageSize } from 'image-size'
+import { loadPhoto, PhotoMosaic, type LoadedPhoto, type FailedPhoto } from '@/lib/pdf-photos'
 
 const ORANGE = '#FF6A1A'
 const GRAY1 = '#111827'
@@ -66,10 +66,6 @@ const s = StyleSheet.create({
   descBlock: { backgroundColor: GRAY5, borderRadius: 4, padding: 10, marginBottom: 10, border: `1 solid ${GRAY4}` },
   descText: { color: GRAY2, lineHeight: 1.5, fontSize: 9.5 },
 
-  // Photo mosaic — each photo keeps its own natural aspect ratio (see PhotoMosaic below)
-  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
-  photoWrap: { borderRadius: 4, overflow: 'hidden', border: `1 solid ${GRAY4}` },
-
   // Signature
   signatureBox: { marginTop: 10 },
   signatureLabel: { fontSize: 8, color: GRAY3, marginBottom: 4 },
@@ -99,63 +95,7 @@ const statusLabels: Record<string, string> = {
   pending: 'Pendente', in_progress: 'Em curso', completed: 'Concluído', cancelled: 'Cancelado',
 }
 
-// ── Photo loading — fetch each image once, read its real dimensions, and
-// hand react-pdf the raw bytes directly (no distortion, no forced square crop). ──
-interface LoadedPhoto {
-  key: string
-  ok: true
-  data: Buffer
-  format: 'jpg' | 'png'
-  aspectRatio: number
-}
-interface FailedPhoto {
-  key: string
-  ok: false
-  url: string
-}
-
-async function loadPhoto(url: string, key: string): Promise<LoadedPhoto | FailedPhoto> {
-  try {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const arrayBuffer = await res.arrayBuffer()
-    const bytes = new Uint8Array(arrayBuffer)
-    const dim = imageSize(bytes)
-    const format = dim.type === 'png' ? 'png' : dim.type === 'jpg' || dim.type === 'jpeg' ? 'jpg' : null
-    if (!format || !dim.width || !dim.height) throw new Error(`Unsupported format: ${dim.type}`)
-    return { key, ok: true, data: Buffer.from(bytes), format, aspectRatio: dim.width / dim.height }
-  } catch (err) {
-    console.warn('[PDF] failed to load photo for sizing, falling back to URL:', url, err)
-    return { key, ok: false, url }
-  }
-}
-
-// Renders photos in a "justified gallery" style: fixed row height, width
-// proportional to each photo's real aspect ratio — landscape shots come out
-// wide, portrait shots come out narrow and tall, nothing gets squashed.
-function PhotoMosaic({ photos, rowHeight = 130, maxWidth = 260 }: { photos: (LoadedPhoto | FailedPhoto)[]; rowHeight?: number; maxWidth?: number }) {
-  return (
-    <View style={s.photoGrid}>
-      {photos.map(p => {
-        if (p.ok) {
-          const width = Math.min(maxWidth, rowHeight * p.aspectRatio)
-          const height = width / p.aspectRatio
-          return (
-            <View key={p.key} style={[s.photoWrap, { width, height }]}>
-              <Image src={{ data: p.data, format: p.format }} style={{ width, height }} />
-            </View>
-          )
-        }
-        // Fallback: still show the photo, just without a known aspect ratio
-        return (
-          <View key={p.key} style={[s.photoWrap, { width: rowHeight * 1.3, height: rowHeight }]}>
-            <Image src={p.url} style={{ width: rowHeight * 1.3, height: rowHeight, objectFit: 'cover' }} />
-          </View>
-        )
-      })}
-    </View>
-  )
-}
+// Shared photo loading + mosaic rendering — see src/lib/pdf-photos.tsx
 
 function PageFooter({ jobTitle, clientName }: { jobTitle: string; clientName: string }) {
   return (
@@ -209,7 +149,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     supabase.from('daily_reports').select('*, media(*)').eq('job_id', jobId).order('report_date'),
     supabase.from('job_reports').select('*, media(*)').eq('job_id', jobId).order('report_date'),
     supabase.from('job_workers').select('worker:profiles(id, full_name)').eq('job_id', jobId),
-    supabase.from('job_locations').select('name, status').eq('job_id', jobId).order('sort_order'),
+    supabase.from('job_locations').select('*, media(*)').eq('job_id', jobId).order('sort_order'),
   ])
 
   if (!job) {
@@ -246,6 +186,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     ...(startReport?.media ?? []),
     ...(dailyReports ?? []).flatMap((r: any) => r.media ?? []),
     ...(finishReport?.media ?? []),
+    ...(locations ?? []).flatMap((l: any) => l.media ?? []),
   ]
   const loadedById = new Map<string, LoadedPhoto | FailedPhoto>(
     (await Promise.all(allMedia.map(m => loadPhoto(m.public_url, m.id)))).map(p => [p.key, p])
@@ -334,11 +275,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         {/* ── Locais — only rendered if the job has any defined ─────── */}
         {locations && locations.length > 0 && (
-          <Page size="A4" style={s.page}>
+          <Page size="A4" style={s.page} wrap>
             <ReportPageHeader jobTitle={job.title} clientName={clientName} accent={ORANGE} />
             <Text style={s.sectionHeading}>
               Locais ({(locations as any[]).filter(l => l.status === 'completed').length}/{locations.length} concluídos)
             </Text>
+
+            {/* At-a-glance grid */}
             <View style={s.locationsGrid}>
               {(locations as any[]).map((loc, i) => {
                 const ls = LOCATION_STYLE[loc.status] ?? LOCATION_STYLE.pending
@@ -350,6 +293,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 )
               })}
             </View>
+
+            {/* Detail cards — only locations with a note and/or photos attached */}
+            {(locations as any[]).some(l => l.notes || (l.media && l.media.length > 0)) && (
+              <>
+                <View style={s.divider} />
+                <Text style={{ fontSize: 9, color: GRAY3, marginBottom: 8 }}>Locais com notas ou fotografias</Text>
+                {(locations as any[]).filter(l => l.notes || (l.media && l.media.length > 0)).map((loc, i) => {
+                  const ls = LOCATION_STYLE[loc.status] ?? LOCATION_STYLE.pending
+                  return (
+                    <View key={i} style={{ marginBottom: 12 }} wrap={false}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: GRAY1 }}>{loc.name}</Text>
+                        <Text style={[s.locationChipStatus, { color: ls.text, backgroundColor: ls.bg, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3 }]}>{ls.label}</Text>
+                      </View>
+                      {loc.notes && (
+                        <View style={s.descBlock}>
+                          <Text style={s.descText}>{loc.notes}</Text>
+                        </View>
+                      )}
+                      {loc.media && loc.media.length > 0 && <PhotoMosaic photos={photosFor(loc.media)} rowHeight={90} maxWidth={160} />}
+                    </View>
+                  )
+                })}
+              </>
+            )}
+
             <PageFooter jobTitle={job.title} clientName={clientName} />
           </Page>
         )}

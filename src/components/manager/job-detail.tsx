@@ -345,7 +345,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
         </TabsContent>
 
         <TabsContent value="locations" className="mt-4">
-          <JobLocationsPanel jobId={job.id} locations={locations} />
+          <JobLocationsPanel jobId={job.id} jobTitle={job.title} locations={locations} />
         </TabsContent>
       </Tabs>
 

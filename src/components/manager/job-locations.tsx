@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Search, Trash2, MapPin, Circle, Clock3, CheckCircle2, StickyNote, Camera, X, Loader2 } from 'lucide-react'
+import { Plus, Search, Trash2, MapPin, Circle, Clock3, CheckCircle2, StickyNote, Camera, X, Loader2, FileDown } from 'lucide-react'
 import type { JobLocation, LocationStatus } from '@/types'
 
 interface JobLocationsPanelProps {
+  jobTitle: string
   jobId: string
   locations: JobLocation[]
 }
@@ -22,12 +23,14 @@ const statusConfig: Record<LocationStatus, { label: string; card: string; icon: 
   completed:   { label: 'Concluído', card: 'bg-green-500/10 border-green-500/30',                icon: CheckCircle2 },
 }
 
-export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPanelProps) {
+export function JobLocationsPanel({ jobId, jobTitle, locations: initial }: JobLocationsPanelProps) {
   const router = useRouter()
   const supabase = createClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [locations, setLocations] = useState(initial)
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdfError, setPdfError] = useState('')
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | LocationStatus>('all')
   const [addOpen, setAddOpen] = useState(false)
@@ -162,6 +165,28 @@ export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPan
     router.refresh()
   }
 
+  async function exportPdf() {
+    setPdfLoading(true)
+    setPdfError('')
+    try {
+      const res = await fetch(`/api/pdf/${jobId}/locations`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `locais_${jobTitle.replace(/\s+/g, '_')}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setPdfError(`Erro ao gerar PDF: ${err instanceof Error ? err.message : err}`)
+    }
+    setPdfLoading(false)
+  }
+
   return (
     <div className="space-y-4">
       {/* Progress + toolbar */}
@@ -174,8 +199,20 @@ export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPan
             </div>
           </div>
         ) : <div />}
-        <Button size="sm" onClick={() => setAddOpen(true)}><Plus className="h-3.5 w-3.5 mr-1.5" />Adicionar locais</Button>
+        <div className="flex items-center gap-2">
+          {locations.length > 0 && (
+            <Button size="sm" variant="outline" onClick={exportPdf} disabled={pdfLoading}>
+              {pdfLoading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1.5" />}
+              Exportar PDF
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setAddOpen(true)}><Plus className="h-3.5 w-3.5 mr-1.5" />Adicionar locais</Button>
+        </div>
       </div>
+
+      {pdfError && (
+        <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">{pdfError}</p>
+      )}
 
       {/* Filters */}
       {locations.length > 0 && (
