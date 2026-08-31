@@ -84,6 +84,9 @@ export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPan
     setLocations(prev => prev.map(l => (l.id === loc.id ? { ...l, status } : l)))
     await supabase.from('job_locations').update({ status, updated_at: new Date().toISOString() }).eq('id', loc.id)
     router.refresh()
+    // Marking as done is the moment worth capturing proof — status is already
+    // saved instantly, this just invites an optional note/photo on top.
+    if (status === 'completed') openEdit({ ...loc, status })
   }
 
   function openEdit(loc: JobLocation) {
