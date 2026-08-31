@@ -15,6 +15,24 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { addDays, addMonths } from 'date-fns'
 import { checkConflictsAction, type ConflictInfo } from '@/app/manager/jobs/actions'
 
+// Fire-and-forget, but log the real reason on failure instead of swallowing it —
+// a silent 401/403/500 here means the worker never gets the assignment email.
+async function notifyWorkers(jobId: string) {
+  try {
+    const res = await fetch('/api/jobs/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_id: jobId }),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      console.error('[notify] failed to email workers:', res.status, body.error ?? body)
+    }
+  } catch (err) {
+    console.error('[notify] request failed:', err)
+  }
+}
+
 interface JobWorkerRow {
   job_id: string
   worker_id: string
@@ -151,7 +169,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
       await supabase.from('job_workers').insert(worker_ids.map(wid => ({ job_id: jobId, worker_id: wid })))
     }
     if (isNew && worker_ids.length > 0) {
-      fetch('/api/jobs/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ job_id: jobId }) }).catch(() => null)
+      notifyWorkers(jobId)
     }
     setLoading(false)
     setOpen(false)
@@ -204,11 +222,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
       await supabase.from('job_workers').insert(
         form.worker_ids.map(wid => ({ job_id: data.id, worker_id: wid }))
       )
-      fetch('/api/jobs/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_id: data.id }),
-      }).catch(() => null)
+      notifyWorkers(data.id)
     }
 
     setLoading(false)

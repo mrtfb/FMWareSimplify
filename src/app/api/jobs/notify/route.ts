@@ -20,16 +20,22 @@ export async function POST(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!user) {
+    console.error('[notify] no authenticated user')
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
 
-  const { data: callerProfile } = await supabase
+  const { data: callerProfile, error: profileError } = await supabase
     .from('profiles')
     .select('role, organization_id')
     .eq('id', user.id)
     .single()
 
   const isManager = callerProfile?.role === 'manager' || callerProfile?.role === 'superadmin'
-  if (!isManager) return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
+  if (!isManager) {
+    console.error('[notify] caller is not a manager:', { userId: user.id, role: callerProfile?.role, profileError: profileError?.message })
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
+  }
 
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,10 +47,14 @@ export async function POST(request: NextRequest) {
     admin.from('job_workers').select('worker_id').eq('job_id', job_id),
   ])
 
-  if (!job || !jws?.length) return NextResponse.json({ ok: true })
+  if (!job || !jws?.length) {
+    console.warn('[notify] nothing to notify:', { jobId: job_id, hasJob: !!job, workerCount: jws?.length ?? 0 })
+    return NextResponse.json({ ok: true })
+  }
 
   // A manager may only notify workers about jobs in their own organization.
   if (callerProfile?.role === 'manager' && job.organization_id !== callerProfile.organization_id) {
+    console.error('[notify] job belongs to a different org than the caller:', { jobOrg: job.organization_id, callerOrg: callerProfile.organization_id })
     return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
   }
 
