@@ -93,6 +93,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterClient, setFilterClient] = useState<string>('all')
+  const [hasLocations, setHasLocations] = useState(false)
   const [locationsText, setLocationsText] = useState('')
   const [rangePrefix, setRangePrefix] = useState('')
   const [rangeStart, setRangeStart] = useState('')
@@ -128,6 +129,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
   function openNew() {
     setEditing(null)
     setForm(emptyForm)
+    setHasLocations(false)
     setLocationsText('')
     setRangePrefix('')
     setRangeStart('')
@@ -339,21 +341,34 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
 
       {!editing && (
         <div className="space-y-2 p-3 bg-background rounded-lg border">
-          <Label className="text-xs">Locais (opcional) — quartos, pisos, zonas...</Label>
-          <div className="grid grid-cols-3 gap-2">
-            <Input placeholder="Prefixo: Quarto " value={rangePrefix} onChange={e => setRangePrefix(e.target.value)} className="col-span-3 sm:col-span-1" />
-            <Input type="number" placeholder="De" value={rangeStart} onChange={e => setRangeStart(e.target.value)} />
-            <Input type="number" placeholder="Até" value={rangeEnd} onChange={e => setRangeEnd(e.target.value)} />
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={generateLocationRange} disabled={!rangeStart || !rangeEnd}>Gerar linhas</Button>
-          <Textarea
-            value={locationsText}
-            onChange={e => setLocationsText(e.target.value)}
-            rows={4}
-            placeholder={'Um por linha, ex:\nQuarto 101\nQuarto 102\nReceção'}
-            className="font-mono text-xs"
-          />
-          <p className="text-[11px] text-mute">Podes sempre adicionar ou editar locais depois, na página do trabalho.</p>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hasLocations}
+              onChange={e => setHasLocations(e.target.checked)}
+              className="h-4 w-4 rounded border-border"
+            />
+            <span className="text-sm font-medium">Este trabalho tem vários locais</span>
+            <span className="text-xs text-mute">(quartos, pisos, zonas...)</span>
+          </label>
+          {hasLocations && (
+            <div className="space-y-2 pt-1">
+              <div className="grid grid-cols-3 gap-2">
+                <Input placeholder="Prefixo: Quarto " value={rangePrefix} onChange={e => setRangePrefix(e.target.value)} className="col-span-3 sm:col-span-1" />
+                <Input type="number" placeholder="De" value={rangeStart} onChange={e => setRangeStart(e.target.value)} />
+                <Input type="number" placeholder="Até" value={rangeEnd} onChange={e => setRangeEnd(e.target.value)} />
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={generateLocationRange} disabled={!rangeStart || !rangeEnd}>Gerar linhas</Button>
+              <Textarea
+                value={locationsText}
+                onChange={e => setLocationsText(e.target.value)}
+                rows={4}
+                placeholder={'Um por linha, ex:\nQuarto 101\nQuarto 102\nReceção'}
+                className="font-mono text-xs"
+              />
+              <p className="text-[11px] text-mute">Podes sempre adicionar ou editar locais depois, na página do trabalho.</p>
+            </div>
+          )}
         </div>
       )}
 

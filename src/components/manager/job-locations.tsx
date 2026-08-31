@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Search, Trash2, MapPin, Circle, Clock3, CheckCircle2, StickyNote } from 'lucide-react'
+import { Plus, Search, Trash2, MapPin, Circle, Clock3, CheckCircle2, StickyNote, Camera, X, Loader2 } from 'lucide-react'
 import type { JobLocation, LocationStatus } from '@/types'
 
 interface JobLocationsPanelProps {
@@ -25,6 +25,8 @@ const statusConfig: Record<LocationStatus, { label: string; card: string; icon: 
 export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPanelProps) {
   const router = useRouter()
   const supabase = createClient()
+  const fileRef = useRef<HTMLInputElement>(null)
+
   const [locations, setLocations] = useState(initial)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | LocationStatus>('all')
@@ -34,8 +36,13 @@ export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPan
   const [rangeStart, setRangeStart] = useState('')
   const [rangeEnd, setRangeEnd] = useState('')
   const [saving, setSaving] = useState(false)
+
   const [editTarget, setEditTarget] = useState<JobLocation | null>(null)
   const [editNotes, setEditNotes] = useState('')
+  const [photos, setPhotos] = useState<File[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
+  const [saveStatus, setSaveStatus] = useState('')
+  const [error, setError] = useState('')
 
   const filtered = locations.filter(l => {
     const matchSearch = !search || l.name.toLowerCase().includes(search.toLowerCase())
@@ -79,13 +86,70 @@ export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPan
     router.refresh()
   }
 
-  async function saveNotes() {
+  function openEdit(loc: JobLocation) {
+    setEditTarget(loc)
+    setEditNotes(loc.notes ?? '')
+    setPhotos([])
+    setPreviews([])
+    setError('')
+    setSaveStatus('')
+  }
+
+  function handleFiles(files: FileList | null) {
+    if (!files) return
+    const arr = Array.from(files).slice(0, 5)
+    setPhotos(prev => [...prev, ...arr])
+    arr.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = e => setPreviews(prev => [...prev, e.target?.result as string])
+      reader.readAsDataURL(file)
+    })
+  }
+
+  function removePhoto(i: number) {
+    setPhotos(p => p.filter((_, idx) => idx !== i))
+    setPreviews(p => p.filter((_, idx) => idx !== i))
+  }
+
+  async function saveEdit() {
     if (!editTarget) return
-    setSaving(true)
+    setSaveStatus('A guardar...')
+    setError('')
+
     await supabase.from('job_locations').update({ notes: editNotes || null }).eq('id', editTarget.id)
-    setLocations(prev => prev.map(l => (l.id === editTarget.id ? { ...l, notes: editNotes || null } : l)))
-    setSaving(false)
+
+    let newMedia: { public_url: string }[] = []
+    if (photos.length > 0) {
+      setSaveStatus(`A carregar ${photos.length} foto${photos.length > 1 ? 's' : ''}...`)
+      const results = await Promise.all(
+        photos.map(async (photo, i) => {
+          const ext = photo.name.split('.').pop()
+          const path = `locations/${editTarget.id}/${Date.now()}_${i}.${ext}`
+          const { error: uploadError } = await supabase.storage.from('reports').upload(path, photo)
+          if (uploadError) return { error: uploadError }
+          const { data: { publicUrl } } = supabase.storage.from('reports').getPublicUrl(path)
+          await supabase.from('media').insert({ job_location_id: editTarget.id, storage_path: path, public_url: publicUrl })
+          return { publicUrl }
+        })
+      )
+      const failed = results.find(r => 'error' in r)
+      if (failed) { setError('Erro ao carregar foto'); setSaveStatus(''); return }
+      newMedia = results.map(r => ({ public_url: (r as { publicUrl: string }).publicUrl }))
+    }
+
+    setLocations(prev => prev.map(l => (l.id === editTarget.id
+      ? {
+          ...l,
+          notes: editNotes || null,
+          media: [...(l.media ?? []), ...newMedia.map(m => ({
+            ...m, id: crypto.randomUUID(), daily_report_id: null, job_report_id: null,
+            job_location_id: editTarget.id, storage_path: '', caption: null, created_at: new Date().toISOString(),
+          }))],
+        }
+      : l)))
+    setSaveStatus('')
     setEditTarget(null)
+    router.refresh()
   }
 
   async function handleDelete(id: string) {
@@ -150,6 +214,9 @@ export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPan
                 </button>
               </div>
               {loc.notes && <p className="text-[11px] text-ink-2 mt-1 line-clamp-2">{loc.notes}</p>}
+              {loc.media && loc.media.length > 0 && (
+                <p className="text-[11px] text-mute mt-1 flex items-center gap-1"><Camera className="h-3 w-3" />{loc.media.length}</p>
+              )}
               <div className="flex items-center gap-1 mt-2">
                 {(['pending', 'in_progress', 'completed'] as LocationStatus[]).map(s => {
                   const Icon = statusConfig[s].icon
@@ -167,7 +234,7 @@ export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPan
                     </button>
                   )
                 })}
-                <button onClick={() => { setEditTarget(loc); setEditNotes(loc.notes ?? '') }} title="Nota" className="p-1 rounded border border-border/50 hover:bg-raise shrink-0">
+                <button onClick={() => openEdit(loc)} title="Nota e fotos" className="p-1 rounded border border-border/50 hover:bg-raise shrink-0">
                   <StickyNote className="h-3.5 w-3.5 text-mute" />
                 </button>
               </div>
@@ -202,15 +269,54 @@ export function JobLocationsPanel({ jobId, locations: initial }: JobLocationsPan
         </DialogContent>
       </Dialog>
 
-      {/* Notes dialog */}
+      {/* Edit dialog — status notes + photos */}
       <Dialog open={!!editTarget} onOpenChange={open => { if (!open) setEditTarget(null) }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editTarget?.name}</DialogTitle></DialogHeader>
-          <div className="space-y-3 mt-2">
-            <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} rows={3} placeholder="Nota sobre este local..." />
+          <div className="space-y-4 mt-2">
+            <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} rows={3} placeholder="Nota sobre este local (opcional)..." />
+
+            {editTarget?.media && editTarget.media.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {editTarget.media.map((m, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={m.public_url} alt="" className="h-16 w-16 object-cover rounded-lg border" />
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="w-full border-2 border-dashed border-border/50 rounded-xl p-3 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors"
+              >
+                <Camera className="h-5 w-5 mx-auto text-mute mb-1" />
+                <p className="text-xs text-mute">Adicionar foto</p>
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
+              {previews.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {previews.map((src, i) => (
+                    <div key={i} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="" className="h-16 w-16 object-cover rounded-lg border" />
+                      <button type="button" onClick={() => removePhoto(i)} className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {error && <p className="text-sm text-red-400 bg-red-500/10 p-2 rounded border border-red-500/20">{error}</p>}
+
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setEditTarget(null)}>Cancelar</Button>
-              <Button onClick={saveNotes} disabled={saving}>{saving ? 'A guardar...' : 'Guardar'}</Button>
+              <Button onClick={saveEdit} disabled={!!saveStatus}>
+                {saveStatus ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />{saveStatus}</> : 'Guardar'}
+              </Button>
             </div>
           </div>
         </DialogContent>

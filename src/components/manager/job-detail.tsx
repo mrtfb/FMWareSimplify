@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft, Pencil, Trash2, AlertTriangle, FileDown, Loader2, Plus, FileText } from 'lucide-react'
+import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft, Pencil, Trash2, AlertTriangle, FileDown, Loader2, Plus, FileText, ClipboardCheck, ChevronRight } from 'lucide-react'
 import type { Job, DailyReport, JobReport, JobLocation } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -110,6 +110,8 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
     setEditOpen(false)
     router.refresh()
   }
+
+  const [activeTab, setActiveTab] = useState('daily')
 
   // ── Quick status change ──────────────────────────────────────────────────
   const [statusLoading, setStatusLoading] = useState(false)
@@ -245,10 +247,25 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
       )}
 
       {/* Report status cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatusCard label="Ficha de Início" report={startReport} />
         <StatusCard label="Fichas Diárias" count={dailyReports.length} />
         <StatusCard label="Ficha de Fim" report={finishReport} />
+        <button onClick={() => setActiveTab('locations')} className="text-left">
+          <Card className="border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors h-full">
+            <CardContent className="p-4 text-center flex flex-col items-center justify-center h-full">
+              <ClipboardCheck className="h-6 w-6 text-primary mx-auto mb-1" />
+              <p className="text-sm font-medium">Locais</p>
+              {locations.length > 0 ? (
+                <p className="text-xl font-bold mt-1 text-primary">
+                  {locations.filter(l => l.status === 'completed').length}/{locations.length}
+                </p>
+              ) : (
+                <p className="text-xs text-mute mt-1 flex items-center gap-0.5">Adicionar <ChevronRight className="h-3 w-3" /></p>
+              )}
+            </CardContent>
+          </Card>
+        </button>
       </div>
 
       {/* My actions — visible only when manager is assigned to this job */}
@@ -303,7 +320,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="daily">
+      <Tabs value={activeTab} onValueChange={v => setActiveTab(v ?? 'daily')}>
         <TabsList>
           <TabsTrigger value="daily">Fichas Diárias ({dailyReports.length})</TabsTrigger>
           <TabsTrigger value="start_finish">Início / Fim</TabsTrigger>
