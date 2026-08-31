@@ -76,6 +76,7 @@
 }
 
 :root {
+  color-scheme: light;
   /* ─── Workshop · light (warm paper + ink) ───────────────── */
   --background: oklch(0.985 0.005 80);     /* warm off-white page */
   --foreground: oklch(0.18 0.01 80);       /* warm near-black ink */
@@ -139,6 +140,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   /* ── FMWare dark brand ─────────────────────────────────── */
   --background: oklch(0.09 0 0);        /* #111 near-black */
   --foreground: oklch(0.97 0 0);

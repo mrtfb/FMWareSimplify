@@ -9,8 +9,8 @@
 //   • src/app/manager/schedule/page.tsx (new route — recommended), or
 //   • a new TabsContent inside <JobsManager/>
 //
-// Drag-to-reassign is sketched but not wired — the visual structure
-// makes it natural to add with @dnd-kit later.
+// Drag a job tile to a different day within the same week to reschedule it
+// (keeps its duration and start/end times, only the date changes).
 
 'use client'
 
@@ -25,6 +25,7 @@ import { WAvatar } from '@/components/shared/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { clientColor } from '@/lib/client-color'
+import { createClient } from '@/lib/supabase/client'
 
 interface JobOnSchedule {
   id: string
@@ -70,7 +71,11 @@ function jobTileStyle(job: JobOnSchedule): React.CSSProperties {
 
 export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
   const router = useRouter()
+  const supabase = createClient()
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [movingId, setMovingId] = useState<string | null>(null)
+  const [moveError, setMoveError] = useState('')
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(anchor, i)), [anchor])
   const todayISO = format(new Date(), 'yyyy-MM-dd')
@@ -92,6 +97,19 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
     }
     return map
   }, [jobs, days])
+
+  async function handleDropOnDay(jobId: string, col: number) {
+    const job = jobs.find(j => j.id === jobId)
+    if (!job) return
+    const newDate = format(days[col], 'yyyy-MM-dd')
+    if (job.scheduled_date === newDate) return
+    setMoveError('')
+    setMovingId(jobId)
+    const { error } = await supabase.from('jobs').update({ scheduled_date: newDate }).eq('id', jobId)
+    setMovingId(null)
+    if (error) { setMoveError(`Erro ao mover "${job.title}". Tente novamente.`); return }
+    router.refresh()
+  }
 
   return (
     <div className="flex h-full flex-col p-4 md:p-8">
@@ -216,7 +234,19 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
                 </div>
 
                 {/* Day area: background grid + absolute tile overlay */}
-                <div className="relative flex-1">
+                <div
+                  className="relative flex-1"
+                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
+                  onDrop={e => {
+                    e.preventDefault()
+                    const jobId = e.dataTransfer.getData('text/plain')
+                    if (!jobId) return
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    const relX = e.clientX - rect.left
+                    const col = Math.max(0, Math.min(6, Math.floor((relX / rect.width) * 7)))
+                    handleDropOnDay(jobId, col)
+                  }}
+                >
                   {/* Background: day column dividers + today highlight */}
                   <div className="absolute inset-0 grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
                     {days.map((d, di) => {
@@ -260,9 +290,18 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
                       <Link
                         key={j.id}
                         href={`/manager/jobs/${j.id}`}
+                        draggable={j.status !== 'cancelled'}
+                        onDragStart={e => {
+                          e.dataTransfer.setData('text/plain', j.id)
+                          e.dataTransfer.effectAllowed = 'move'
+                          setDraggingId(j.id)
+                        }}
+                        onDragEnd={() => setDraggingId(null)}
                         className={cn(
                           'absolute inset-y-1.5 overflow-hidden rounded border-l-2 px-2 py-1 transition-shadow hover:shadow-md',
-                          j.status === 'cancelled' && 'line-through opacity-60',
+                          j.status === 'cancelled' ? 'line-through opacity-60' : 'cursor-grab active:cursor-grabbing',
+                          draggingId === j.id && 'opacity-30',
+                          movingId === j.id && 'animate-pulse',
                         )}
                         style={{
                           ...jobTileStyle(j),
@@ -273,9 +312,14 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
                       >
                         <div className="truncate text-[11px] font-medium leading-tight">{j.title}</div>
                         <div className="mt-0.5 font-mono text-[9px] tracking-wide opacity-70">
-                          {j.scheduled_time_start?.slice(0, 5)}–{j.scheduled_time_end?.slice(0, 5)}
-                          {duration > 1 && ` · ${duration}d`}
-                          {j.client?.name && ` · ${j.client.name.slice(0, 14)}`}
+                          {movingId === j.id
+                            ? 'A mover...'
+                            : <>
+                                {j.scheduled_time_start?.slice(0, 5)}–{j.scheduled_time_end?.slice(0, 5)}
+                                {duration > 1 && ` · ${duration}d`}
+                                {j.client?.name && ` · ${j.client.name.slice(0, 14)}`}
+                              </>
+                          }
                         </div>
                       </Link>
                     )
@@ -287,6 +331,10 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
         </div>
         </div>
       </div>
+
+      {moveError && (
+        <p className="mt-3 text-sm text-red-500 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">{moveError}</p>
+      )}
 
       {/* Legend */}
       <div className="mt-3 flex flex-wrap items-center gap-4 text-[11px] text-ink-2">
