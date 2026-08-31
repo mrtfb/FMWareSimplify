@@ -71,7 +71,7 @@ export default function RegisterPage() {
           <div className="bg-primary p-3 rounded-xl">
             <ClipboardList className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-ink">FichasWork</h1>
+          <h1 className="text-2xl font-bold text-ink">GestObra</h1>
           <p className="text-mute text-sm">Registe a sua empresa — 14 dias grátis</p>
         </div>
 

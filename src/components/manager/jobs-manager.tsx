@@ -52,8 +52,8 @@ const statusConfig = {
 
 const recurrenceConfig = {
   none: null,
-  weekly: { label: 'Semanal', color: 'bg-indigo-100 text-indigo-700' },
-  monthly: { label: 'Mensal', color: 'bg-violet-100 text-violet-700' },
+  weekly: { label: 'Semanal', color: 'bg-indigo-500/15 text-indigo-400' },
+  monthly: { label: 'Mensal', color: 'bg-violet-500/15 text-violet-400' },
 }
 
 export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId }: JobsManagerProps) {
@@ -371,7 +371,7 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex overflow-hidden rounded-md border border-border">
             <button className="px-3 py-1.5 text-xs text-mute hover:bg-background" onClick={() => router.push('/manager/schedule')}>Equipa</button>
-            <button className="bg-gray-900 text-white px-3 py-1.5 text-xs font-medium">Lista</button>
+            <button className="bg-primary text-white px-3 py-1.5 text-xs font-medium">Lista</button>
           </div>
           <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" /> Novo trabalho</Button>
         </div>

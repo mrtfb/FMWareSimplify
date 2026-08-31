@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { pt as ptPT } from 'date-fns/locale'
-import { Building2, Users, Briefcase, Plus, Pencil, ShieldCheck, Mail, LogOut } from 'lucide-react'
+import { Building2, Users, Briefcase, Plus, Pencil, ShieldCheck, Mail, LogOut, KeyRound } from 'lucide-react'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { signOut } from '@/app/auth/actions'
@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { setOrgStatus, setOrgPlan, createOrgWithManager, updateOrg, inviteManagerToOrg } from '@/app/admin/actions'
+import { createClient } from '@/lib/supabase/client'
+import { PasswordField, isPasswordStrong } from '@/components/shared/password-field'
 
 interface OrgRow {
   id: string
@@ -46,6 +48,27 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
   const [inviteForm, setInviteForm] = useState({ name: '', email: '' })
   const [inviting, setInviting] = useState(false)
   const [inviteMsg, setInviteMsg] = useState('')
+
+  // ── My password ──────────────────────────────────────────────────────────
+  const [pwOpen, setPwOpen] = useState(false)
+  const [pwForm, setPwForm] = useState({ password: '', confirm: '' })
+  const [pwLoading, setPwLoading] = useState(false)
+  const [pwMsg, setPwMsg] = useState('')
+  const [pwError, setPwError] = useState(false)
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault()
+    if (!isPasswordStrong(pwForm.password)) { setPwError(true); setPwMsg('A password não cumpre os requisitos mínimos.'); return }
+    if (pwForm.password !== pwForm.confirm) { setPwError(true); setPwMsg('As passwords não coincidem.'); return }
+    setPwLoading(true); setPwMsg('')
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ password: pwForm.password })
+    setPwLoading(false)
+    if (error) { setPwError(true); setPwMsg('Erro ao alterar password. Tente novamente.'); return }
+    setPwError(false)
+    setPwMsg('Password alterada com sucesso!')
+    setPwForm({ password: '', confirm: '' })
+  }
 
   function set(f: string, v: string) { setForm(prev => ({ ...prev, [f]: v })) }
   function setE(f: string, v: string) { setEditForm(prev => ({ ...prev, [f]: v })) }
@@ -122,6 +145,13 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
             <Plus className="h-4 w-4 mr-2" />
             Nova organização
           </Button>
+          <button
+            onClick={() => { setPwOpen(true); setPwMsg(''); setPwForm({ password: '', confirm: '' }) }}
+            className="p-2 rounded-md text-mute hover:text-ink-2 hover:bg-raise transition-colors"
+            title="Alterar password"
+          >
+            <KeyRound className="h-4 w-4" />
+          </button>
           <ThemeToggle className="p-2 rounded-md text-mute hover:text-ink-2 hover:bg-raise" />
           <form action={signOut}>
             <button type="submit" className="p-2 rounded-md text-mute hover:text-ink-2 hover:bg-raise transition-colors" title="Sair">
@@ -330,6 +360,35 @@ export function AdminDashboard({ orgs }: { orgs: OrgRow[] }) {
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="outline" onClick={() => setNewOpen(false)}>Cancelar</Button>
               <Button type="submit" disabled={loading}>{loading ? 'A criar...' : 'Criar'}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* My password dialog */}
+      <Dialog open={pwOpen} onOpenChange={setPwOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Alterar a minha password</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handlePasswordChange} className="space-y-4 mt-2">
+            <div className="space-y-1">
+              <Label>Nova password</Label>
+              <PasswordField value={pwForm.password} onChange={v => setPwForm(f => ({ ...f, password: v }))} showStrength />
+            </div>
+            <div className="space-y-1">
+              <Label>Confirmar nova password</Label>
+              <PasswordField value={pwForm.confirm} onChange={v => setPwForm(f => ({ ...f, confirm: v }))} />
+              {pwForm.confirm.length > 0 && pwForm.password !== pwForm.confirm && (
+                <p className="text-xs text-red-500">As passwords não coincidem.</p>
+              )}
+            </div>
+            {pwMsg && <p className={`text-sm ${pwError ? 'text-red-600' : 'text-green-600'}`}>{pwMsg}</p>}
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setPwOpen(false)}>Fechar</Button>
+              <Button type="submit" disabled={pwLoading || !isPasswordStrong(pwForm.password) || pwForm.password !== pwForm.confirm}>
+                {pwLoading ? 'A guardar...' : 'Guardar password'}
+              </Button>
             </div>
           </form>
         </DialogContent>

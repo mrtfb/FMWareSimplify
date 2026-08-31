@@ -22,6 +22,19 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('role, organization_id')
+    .eq('id', user.id)
+    .single()
+
+  const isManager = callerProfile?.role === 'manager' || callerProfile?.role === 'superadmin'
+  if (!isManager) return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
+
+  // Never trust the org id from the client body — always scope to the caller's own org.
+  const targetOrgId = callerProfile?.role === 'superadmin' ? organization_id : callerProfile?.organization_id
+  if (!targetOrgId) return NextResponse.json({ error: 'Organização inválida' }, { status: 400 })
+
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -40,7 +53,7 @@ export async function POST(request: NextRequest) {
     id: data.user.id,
     full_name,
     role: 'worker',
-    organization_id,
+    organization_id: targetOrgId,
   })
 
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 })
@@ -48,7 +61,7 @@ export async function POST(request: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fmware-simplify.vercel.app'
   await sendEmail({
     to: email,
-    subject: 'Bem-vindo ao FichasWork — Acesso à sua conta',
+    subject: 'Bem-vindo ao GestObra — Acesso à sua conta',
     html: workerWelcomeHtml({ name: full_name, email, password, appUrl }),
   })
 

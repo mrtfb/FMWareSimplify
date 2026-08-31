@@ -107,7 +107,7 @@ export function OrgSettings({ org }: { org: Org }) {
       <div className="space-y-1.5">
         <Label>Plano atual</Label>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium capitalize text-blue-800">
+          <span className="rounded-full bg-blue-500/15 px-3 py-1 text-sm font-medium capitalize text-blue-400">
             {org.plan}
           </span>
         </div>

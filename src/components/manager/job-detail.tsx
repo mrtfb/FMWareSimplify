@@ -123,8 +123,10 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
   const [deleting, setDeleting] = useState(false)
 
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdfError, setPdfError] = useState('')
   async function handlePDF() {
     setPdfLoading(true)
+    setPdfError('')
     try {
       const res = await fetch(`/api/pdf/${job.id}`)
       if (!res.ok) {
@@ -141,7 +143,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
-      alert(`Erro ao gerar PDF: ${err instanceof Error ? err.message : err}`)
+      setPdfError(`Erro ao gerar PDF: ${err instanceof Error ? err.message : err}`)
     }
     setPdfLoading(false)
   }
@@ -187,6 +189,10 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
           </button>
         </div>
       </div>
+
+      {pdfError && (
+        <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">{pdfError}</p>
+      )}
 
       {/* Job header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -533,7 +539,7 @@ function ReportCard({
           <div className="flex items-center gap-2 text-xs">
             <span><strong>Cliente:</strong> {jobReport.client_name}</span>
             {jobReport.client_approved != null && (
-              <span className={`px-1.5 py-0.5 rounded ${jobReport.client_approved ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              <span className={`px-1.5 py-0.5 rounded ${jobReport.client_approved ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
                 {jobReport.client_approved ? 'Aprovado' : 'Não aprovado'}
               </span>
             )}

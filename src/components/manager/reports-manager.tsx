@@ -42,6 +42,7 @@ export function ReportsManager({ jobs, clients, workers, jobWorkers }: ReportsMa
   const [filterStatus, setFilterStatus] = useState('all')
   const [selected, setSelected]     = useState<Set<string>>(new Set())
   const [exportStatus, setExportStatus] = useState<string>('')
+  const [exportError, setExportError] = useState<string>('')
 
   // Build worker→jobs map
   const workerJobIds = useMemo(() => {
@@ -87,6 +88,8 @@ export function ReportsManager({ jobs, clients, workers, jobWorkers }: ReportsMa
 
   async function exportSelected() {
     const ids = [...selected]
+    const failed: string[] = []
+    setExportError('')
     for (let i = 0; i < ids.length; i++) {
       const job = jobs.find(j => j.id === ids[i])
       setExportStatus(`A exportar ${i + 1} de ${ids.length}: ${job?.title ?? ''}...`)
@@ -102,12 +105,15 @@ export function ReportsManager({ jobs, clients, workers, jobWorkers }: ReportsMa
         a.click()
         URL.revokeObjectURL(url)
       } catch {
-        // continue with remaining
+        failed.push(job?.title ?? ids[i])
       }
       // small pause between downloads to avoid browser blocking
       if (i < ids.length - 1) await new Promise(r => setTimeout(r, 600))
     }
     setExportStatus('')
+    if (failed.length > 0) {
+      setExportError(`Falhou a exportação de: ${failed.join(', ')}`)
+    }
   }
 
   const allWithDataSelected = withData.length > 0 && selected.size === withData.length
@@ -129,6 +135,10 @@ export function ReportsManager({ jobs, clients, workers, jobWorkers }: ReportsMa
           </Button>
         )}
       </div>
+
+      {exportError && (
+        <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">{exportError}</p>
+      )}
 
       {/* Filters */}
       <div className="bg-card rounded-xl border p-4 space-y-3">
@@ -273,6 +283,7 @@ export function ReportsManager({ jobs, clients, workers, jobWorkers }: ReportsMa
                         className="h-7 text-xs w-full gap-1"
                         onClick={async () => {
                           setExportStatus(`A exportar ${job.title}...`)
+                          setExportError('')
                           try {
                             const res = await fetch(`/api/pdf/${job.id}`)
                             if (!res.ok) throw new Error()
@@ -283,7 +294,9 @@ export function ReportsManager({ jobs, clients, workers, jobWorkers }: ReportsMa
                             a.download = `relatorio_${job.title.replace(/\s+/g, '_')}.pdf`
                             a.click()
                             URL.revokeObjectURL(url)
-                          } catch { /* ignore */ }
+                          } catch {
+                            setExportError(`Erro ao exportar "${job.title}". Tente novamente.`)
+                          }
                           setExportStatus('')
                         }}
                         disabled={!!exportStatus}
