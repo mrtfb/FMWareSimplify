@@ -93,6 +93,10 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterClient, setFilterClient] = useState<string>('all')
+  const [locationsText, setLocationsText] = useState('')
+  const [rangePrefix, setRangePrefix] = useState('')
+  const [rangeStart, setRangeStart] = useState('')
+  const [rangeEnd, setRangeEnd] = useState('')
 
   const workersByJob: Record<string, { worker_id: string; full_name: string }[]> = {}
   jobWorkers.forEach(jw => {
@@ -124,6 +128,10 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
   function openNew() {
     setEditing(null)
     setForm(emptyForm)
+    setLocationsText('')
+    setRangePrefix('')
+    setRangeStart('')
+    setRangeEnd('')
     setOpen(true)
   }
 
@@ -143,6 +151,15 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
       recurrence: (job.recurrence as 'none' | 'weekly' | 'monthly') ?? 'none',
     })
     setOpen(true)
+  }
+
+  function generateLocationRange() {
+    const start = parseInt(rangeStart)
+    const end = parseInt(rangeEnd)
+    if (isNaN(start) || isNaN(end) || start > end) return
+    const lines: string[] = []
+    for (let i = start; i <= end; i++) lines.push(`${rangePrefix}${i}`)
+    setLocationsText(prev => (prev.trim() ? `${prev}\n${lines.join('\n')}` : lines.join('\n')))
   }
 
   async function handleSaveForced() {
@@ -170,6 +187,12 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
     }
     if (isNew && worker_ids.length > 0) {
       notifyWorkers(jobId)
+    }
+    if (isNew) {
+      const names = locationsText.split('\n').map(l => l.trim()).filter(Boolean)
+      if (names.length > 0) {
+        await supabase.from('job_locations').insert(names.map((name, i) => ({ job_id: jobId, name, sort_order: i })))
+      }
     }
     setLoading(false)
     setOpen(false)
@@ -313,6 +336,26 @@ export function JobsManager({ jobs, clients, workers, jobWorkers, organizationId
           <Input type="time" value={form.scheduled_time_end} onChange={e => setForm(f => ({ ...f, scheduled_time_end: e.target.value }))} />
         </div>
       </div>
+
+      {!editing && (
+        <div className="space-y-2 p-3 bg-background rounded-lg border">
+          <Label className="text-xs">Locais (opcional) — quartos, pisos, zonas...</Label>
+          <div className="grid grid-cols-3 gap-2">
+            <Input placeholder="Prefixo: Quarto " value={rangePrefix} onChange={e => setRangePrefix(e.target.value)} className="col-span-3 sm:col-span-1" />
+            <Input type="number" placeholder="De" value={rangeStart} onChange={e => setRangeStart(e.target.value)} />
+            <Input type="number" placeholder="Até" value={rangeEnd} onChange={e => setRangeEnd(e.target.value)} />
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={generateLocationRange} disabled={!rangeStart || !rangeEnd}>Gerar linhas</Button>
+          <Textarea
+            value={locationsText}
+            onChange={e => setLocationsText(e.target.value)}
+            rows={4}
+            placeholder={'Um por linha, ex:\nQuarto 101\nQuarto 102\nReceção'}
+            className="font-mono text-xs"
+          />
+          <p className="text-[11px] text-mute">Podes sempre adicionar ou editar locais depois, na página do trabalho.</p>
+        </div>
+      )}
 
       <div className="space-y-1">
         <Label>Recorrência</Label>
