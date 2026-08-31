@@ -80,11 +80,26 @@ create table public.job_reports (
   created_at timestamptz default now()
 );
 
+-- Sub-locations within a job (e.g. hotel rooms, floors, zones) — status
+-- persists across the whole job, independent of the day-by-day fichas.
+create table public.job_locations (
+  id uuid primary key default uuid_generate_v4(),
+  job_id uuid references public.jobs(id) on delete cascade not null,
+  name text not null,
+  status text not null default 'pending' check (status in ('pending', 'in_progress', 'completed')),
+  notes text,
+  sort_order int not null default 0,
+  updated_by uuid references public.profiles(id) on delete set null,
+  updated_at timestamptz default now(),
+  created_at timestamptz default now()
+);
+
 -- Media attachments
 create table public.media (
   id uuid primary key default uuid_generate_v4(),
   daily_report_id uuid references public.daily_reports(id) on delete cascade,
   job_report_id uuid references public.job_reports(id) on delete cascade,
+  job_location_id uuid references public.job_locations(id) on delete cascade,
   storage_path text not null,
   public_url text not null,
   caption text,
@@ -98,6 +113,7 @@ alter table public.clients enable row level security;
 alter table public.jobs enable row level security;
 alter table public.daily_reports enable row level security;
 alter table public.job_reports enable row level security;
+alter table public.job_locations enable row level security;
 alter table public.media enable row level security;
 
 -- RLS Policies: users can read their own org data
@@ -125,6 +141,13 @@ create policy "job_reports: own org" on public.job_reports for all using (
     )
   )
 );
+create policy "job_locations: own org" on public.job_locations for all using (
+  job_id in (
+    select id from public.jobs where organization_id = (
+      select organization_id from public.profiles where id = auth.uid()
+    )
+  )
+);
 create policy "media: own org" on public.media for all using (
   daily_report_id in (
     select dr.id from public.daily_reports dr
@@ -134,6 +157,11 @@ create policy "media: own org" on public.media for all using (
   job_report_id in (
     select jr.id from public.job_reports jr
     join public.jobs j on j.id = jr.job_id
+    where j.organization_id = (select organization_id from public.profiles where id = auth.uid())
+  ) or
+  job_location_id in (
+    select jl.id from public.job_locations jl
+    join public.jobs j on j.id = jl.job_id
     where j.organization_id = (select organization_id from public.profiles where id = auth.uid())
   )
 );

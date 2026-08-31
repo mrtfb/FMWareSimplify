@@ -19,6 +19,12 @@ const TYPE_STYLE = {
   finish: { accent: '#7c3aed', soft: '#ede9fe', label: 'FICHA DE FIM' },
 } as const
 
+const LOCATION_STYLE: Record<string, { bg: string; border: string; text: string; label: string }> = {
+  pending:     { bg: '#f9fafb', border: GRAY4,    text: GRAY3,      label: 'Por fazer' },
+  in_progress: { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', label: 'Em curso' },
+  completed:   { bg: '#f0fdf4', border: '#bbf7d0', text: '#15803d', label: 'Concluído' },
+}
+
 const s = StyleSheet.create({
   page: { padding: '36 44 60 44', fontFamily: 'Helvetica', fontSize: 10, color: GRAY1, backgroundColor: '#ffffff' },
 
@@ -77,6 +83,12 @@ const s = StyleSheet.create({
   // Footer
   footer: { position: 'absolute', bottom: 22, left: 44, right: 44, borderTop: `1 solid ${GRAY4}`, paddingTop: 6, flexDirection: 'row', justifyContent: 'space-between', fontSize: 8, color: GRAY3 },
   divider: { borderTop: `1 solid ${GRAY4}`, marginTop: 12, marginBottom: 12 },
+
+  // Locations summary (grid of chips, color-coded by status)
+  locationsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  locationChip: { width: 110, borderRadius: 4, padding: '6 8', border: `1 solid ${GRAY4}` },
+  locationChipText: { fontSize: 8.5, fontWeight: 'bold' },
+  locationChipStatus: { fontSize: 7, marginTop: 2 },
 })
 
 function formatDate(d: string) {
@@ -192,11 +204,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const [{ data: job, error: jobError }, { data: dailyReports }, { data: jobReports }, { data: jobWorkers }] = await Promise.all([
+  const [{ data: job, error: jobError }, { data: dailyReports }, { data: jobReports }, { data: jobWorkers }, { data: locations }] = await Promise.all([
     supabase.from('jobs').select('*, client:clients(*)').eq('id', jobId).single(),
     supabase.from('daily_reports').select('*, media(*)').eq('job_id', jobId).order('report_date'),
     supabase.from('job_reports').select('*, media(*)').eq('job_id', jobId).order('report_date'),
     supabase.from('job_workers').select('worker:profiles(id, full_name)').eq('job_id', jobId),
+    supabase.from('job_locations').select('name, status').eq('job_id', jobId).order('sort_order'),
   ])
 
   if (!job) {
@@ -318,6 +331,28 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
           <PageFooter jobTitle={job.title} clientName={clientName} />
         </Page>
+
+        {/* ── Locais — only rendered if the job has any defined ─────── */}
+        {locations && locations.length > 0 && (
+          <Page size="A4" style={s.page}>
+            <ReportPageHeader jobTitle={job.title} clientName={clientName} accent={ORANGE} />
+            <Text style={s.sectionHeading}>
+              Locais ({(locations as any[]).filter(l => l.status === 'completed').length}/{locations.length} concluídos)
+            </Text>
+            <View style={s.locationsGrid}>
+              {(locations as any[]).map((loc, i) => {
+                const ls = LOCATION_STYLE[loc.status] ?? LOCATION_STYLE.pending
+                return (
+                  <View key={i} style={[s.locationChip, { backgroundColor: ls.bg, borderColor: ls.border }]}>
+                    <Text style={[s.locationChipText, { color: GRAY1 }]}>{loc.name}</Text>
+                    <Text style={[s.locationChipStatus, { color: ls.text }]}>{ls.label}</Text>
+                  </View>
+                )
+              })}
+            </View>
+            <PageFooter jobTitle={job.title} clientName={clientName} />
+          </Page>
+        )}
 
         {/* ── Ficha de Início ──────────────────────────────────── */}
         {startReport && (

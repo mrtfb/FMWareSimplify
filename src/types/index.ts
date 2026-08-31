@@ -81,10 +81,26 @@ export interface Media {
   id: string
   daily_report_id: string | null
   job_report_id: string | null
+  job_location_id: string | null
   storage_path: string
   public_url: string
   caption: string | null
   created_at: string
+}
+
+export type LocationStatus = 'pending' | 'in_progress' | 'completed'
+
+export interface JobLocation {
+  id: string
+  job_id: string
+  name: string
+  status: LocationStatus
+  notes: string | null
+  sort_order: number
+  updated_by: string | null
+  updated_at: string
+  created_at: string
+  media?: Media[]
 }
 
 export type JobStatus = Job['status']

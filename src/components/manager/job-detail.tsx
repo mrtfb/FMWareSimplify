@@ -12,12 +12,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { MapPin, User, Users, Calendar, Clock, Camera, CheckCircle, AlertCircle, ChevronLeft, Pencil, Trash2, AlertTriangle, FileDown, Loader2, Plus, FileText } from 'lucide-react'
-import type { Job, DailyReport, JobReport } from '@/types'
+import type { Job, DailyReport, JobReport, JobLocation } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Link from 'next/link'
 import { WStatus } from '@/components/shared/status'
 import { checkConflictsAction, type ConflictInfo } from '@/app/manager/jobs/actions'
+import { JobLocationsPanel } from './job-locations'
 
 interface JobDetailProps {
   job: Job & { client?: unknown }
@@ -28,6 +29,7 @@ interface JobDetailProps {
   currentUserId: string
   dailyReports: (DailyReport & { worker?: { full_name: string }; media?: { public_url: string; caption: string | null }[] })[]
   jobReports: (JobReport & { worker?: { full_name: string }; media?: { public_url: string; caption: string | null }[] })[]
+  locations: JobLocation[]
 }
 
 const STATUS_OPTIONS: { value: Job['status']; label: string }[] = [
@@ -37,7 +39,7 @@ const STATUS_OPTIONS: { value: Job['status']; label: string }[] = [
   { value: 'cancelled',   label: 'Cancelado' },
 ]
 
-export function JobDetail({ job, workers, clients, allWorkers, organizationId, currentUserId, dailyReports, jobReports }: JobDetailProps) {
+export function JobDetail({ job, workers, clients, allWorkers, organizationId, currentUserId, dailyReports, jobReports, locations }: JobDetailProps) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -305,6 +307,7 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
         <TabsList>
           <TabsTrigger value="daily">Fichas Diárias ({dailyReports.length})</TabsTrigger>
           <TabsTrigger value="start_finish">Início / Fim</TabsTrigger>
+          <TabsTrigger value="locations">Locais {locations.length > 0 && `(${locations.length})`}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="daily" className="mt-4 space-y-4">
@@ -322,6 +325,10 @@ export function JobDetail({ job, workers, clients, allWorkers, organizationId, c
           {finishReport
             ? <ReportCard report={finishReport} type="job" label="Ficha de Fim" />
             : <p className="text-mute text-sm mt-4">Ficha de fim não preenchida</p>}
+        </TabsContent>
+
+        <TabsContent value="locations" className="mt-4">
+          <JobLocationsPanel jobId={job.id} locations={locations} />
         </TabsContent>
       </Tabs>
 

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { ChevronLeft, MapPin, Phone, User, Calendar, FileText, Plus, CheckCircle, AlertCircle, Users } from 'lucide-react'
+import { ChevronLeft, MapPin, Phone, User, Calendar, FileText, Plus, CheckCircle, AlertCircle, Users, ClipboardCheck, ChevronRight } from 'lucide-react'
 import type { Job, DailyReport, JobReport } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -14,6 +14,8 @@ interface WorkerJobDetailProps {
   jobReports: (JobReport & { media?: { public_url: string }[] })[]
   userId: string
   team: string[]
+  locationsCount: number
+  locationsDone: number
 }
 
 const statusConfig = {
@@ -23,7 +25,7 @@ const statusConfig = {
   cancelled: { label: 'Cancelado', color: 'bg-red-500/15 text-red-400' },
 }
 
-export function WorkerJobDetail({ job, dailyReports, jobReports, userId, team }: WorkerJobDetailProps) {
+export function WorkerJobDetail({ job, dailyReports, jobReports, userId, team, locationsCount, locationsDone }: WorkerJobDetailProps) {
   const st = statusConfig[job.status]
   const client = job.client
   const startReport = jobReports.find(r => r.report_type === 'start')
@@ -77,6 +79,21 @@ export function WorkerJobDetail({ job, dailyReports, jobReports, userId, team }:
 
       {/* Action buttons */}
       <div className="grid grid-cols-1 gap-3">
+        {locationsCount > 0 && (
+          <Link href={`/worker/jobs/${job.id}/locations`} className="block">
+            <div className="p-4 rounded-xl border-2 border-border flex items-center justify-between gap-3 hover:bg-raise transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <ClipboardCheck className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Locais</p>
+                  <p className="text-xs text-mute">{locationsDone}/{locationsCount} concluídos</p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-mute" />
+            </div>
+          </Link>
+        )}
+
         <div className={`p-4 rounded-xl border-2 flex items-center justify-between gap-3 ${startReport ? 'border-green-500' : 'border-border'}`}>
           <div className="flex items-center gap-3">
             {startReport

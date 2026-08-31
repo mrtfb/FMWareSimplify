@@ -16,16 +16,29 @@ export default async function WorkerJobDetailPage({ params }: { params: Promise<
 
   if (!access) notFound()
 
-  const [{ data: job }, { data: dailyReports }, { data: jobReports }, { data: teammates }] = await Promise.all([
+  const [{ data: job }, { data: dailyReports }, { data: jobReports }, { data: teammates }, { data: locations }] = await Promise.all([
     supabase.from('jobs').select('*, client:clients(name, address, contact_name, contact_phone)').eq('id', id).single(),
     supabase.from('daily_reports').select('*, media(*)').eq('job_id', id).order('report_date', { ascending: false }),
     supabase.from('job_reports').select('*, media(*)').eq('job_id', id).order('report_date'),
     supabase.from('job_workers').select('worker_id, worker:profiles(full_name)').eq('job_id', id).neq('worker_id', user!.id),
+    supabase.from('job_locations').select('id, status').eq('job_id', id),
   ])
 
   if (!job) notFound()
 
   const team = (teammates ?? []).map(t => (t.worker as unknown as { full_name: string } | null)?.full_name ?? '').filter(Boolean)
+  const locationsCount = locations?.length ?? 0
+  const locationsDone = (locations ?? []).filter(l => l.status === 'completed').length
 
-  return <WorkerJobDetail job={job} dailyReports={dailyReports ?? []} jobReports={jobReports ?? []} userId={user!.id} team={team} />
+  return (
+    <WorkerJobDetail
+      job={job}
+      dailyReports={dailyReports ?? []}
+      jobReports={jobReports ?? []}
+      userId={user!.id}
+      team={team}
+      locationsCount={locationsCount}
+      locationsDone={locationsDone}
+    />
+  )
 }
