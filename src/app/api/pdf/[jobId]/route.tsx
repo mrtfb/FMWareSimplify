@@ -2,27 +2,39 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
+import { imageSize } from 'image-size'
 
-const BLUE = '#2563eb'
+const ORANGE = '#FF6A1A'
 const GRAY1 = '#111827'
 const GRAY2 = '#374151'
 const GRAY3 = '#6b7280'
 const GRAY4 = '#e5e7eb'
 const GRAY5 = '#f9fafb'
 
+// Visual identity per report type — gives the PDF rhythm as you flip through it
+// instead of every page looking identical.
+const TYPE_STYLE = {
+  start:  { accent: '#059669', soft: '#d1fae5', label: 'FICHA DE INÍCIO' },
+  daily:  { accent: '#2563eb', soft: '#dbeafe', label: 'FICHA DIÁRIA' },
+  finish: { accent: '#7c3aed', soft: '#ede9fe', label: 'FICHA DE FIM' },
+} as const
+
 const s = StyleSheet.create({
   page: { padding: '36 44 60 44', fontFamily: 'Helvetica', fontSize: 10, color: GRAY1, backgroundColor: '#ffffff' },
 
+  // Colored accent strip at the very top of every report page (color varies by type)
+  accentStrip: { position: 'absolute', top: 0, left: 0, right: 0, height: 5 },
+
   // Page header (repeated on every page except cover)
-  pageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 10, borderBottom: `1.5 solid ${BLUE}` },
+  pageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 10, borderBottom: `1.5 solid ${GRAY4}` },
   pageHeaderLeft: { flex: 1 },
   pageHeaderTitle: { fontSize: 9, fontWeight: 'bold', color: GRAY2 },
   pageHeaderSub: { fontSize: 8, color: GRAY3, marginTop: 1 },
-  pageHeaderLogo: { fontSize: 10, fontWeight: 'bold', color: BLUE },
+  pageHeaderLogo: { fontSize: 10, fontWeight: 'bold', color: ORANGE },
 
   // Cover
-  coverHeader: { marginBottom: 32, paddingBottom: 16, borderBottom: `2 solid ${BLUE}` },
-  coverTitle: { fontSize: 22, fontWeight: 'bold', color: BLUE },
+  coverHeader: { marginBottom: 32, paddingBottom: 16, borderBottom: `2 solid ${ORANGE}` },
+  coverTitle: { fontSize: 22, fontWeight: 'bold', color: ORANGE },
   coverSubtitle: { fontSize: 11, color: GRAY3, marginTop: 4 },
   coverMeta: { marginTop: 24, gap: 6 },
   metaRow: { flexDirection: 'row', gap: 6, marginBottom: 5 },
@@ -32,12 +44,12 @@ const s = StyleSheet.create({
   // Summary boxes
   summaryGrid: { flexDirection: 'row', gap: 10, marginTop: 24 },
   summaryBox: { flex: 1, backgroundColor: GRAY5, borderRadius: 4, padding: '10 12', border: `1 solid ${GRAY4}` },
-  summaryNum: { fontSize: 20, fontWeight: 'bold', color: BLUE },
+  summaryNum: { fontSize: 20, fontWeight: 'bold', color: ORANGE },
   summaryLabel: { fontSize: 8, color: GRAY3, marginTop: 2 },
 
   // Section heading on report pages
   sectionHeading: { fontSize: 13, fontWeight: 'bold', color: GRAY1, marginBottom: 14 },
-  sectionTag: { fontSize: 8, fontWeight: 'bold', color: BLUE, backgroundColor: '#dbeafe', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3, marginBottom: 8, alignSelf: 'flex-start' },
+  sectionTag: { fontSize: 8, fontWeight: 'bold', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3, marginBottom: 8, alignSelf: 'flex-start' },
 
   // Info rows
   infoRow: { flexDirection: 'row', marginBottom: 6 },
@@ -48,14 +60,14 @@ const s = StyleSheet.create({
   descBlock: { backgroundColor: GRAY5, borderRadius: 4, padding: 10, marginBottom: 10, border: `1 solid ${GRAY4}` },
   descText: { color: GRAY2, lineHeight: 1.5, fontSize: 9.5 },
 
-  // Photo grid
-  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  photo: { width: 230, height: 172, borderRadius: 4, border: `1 solid ${GRAY4}` },
+  // Photo mosaic — each photo keeps its own natural aspect ratio (see PhotoMosaic below)
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  photoWrap: { borderRadius: 4, overflow: 'hidden', border: `1 solid ${GRAY4}` },
 
   // Signature
   signatureBox: { marginTop: 10 },
   signatureLabel: { fontSize: 8, color: GRAY3, marginBottom: 4 },
-  signature: { width: 200, height: 70, border: `1 solid ${GRAY4}`, borderRadius: 3, backgroundColor: '#ffffff' },
+  signature: { width: 200, height: 70, border: `1 solid ${GRAY4}`, borderRadius: 3, backgroundColor: '#ffffff', objectFit: 'contain' },
 
   // Approval badge
   badgeApproved: { fontSize: 8, fontWeight: 'bold', color: '#15803d', backgroundColor: '#dcfce7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 },
@@ -70,12 +82,67 @@ const s = StyleSheet.create({
 function formatDate(d: string) {
   try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' }) } catch { return d }
 }
-function formatDateShort(d: string) {
-  try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' }) } catch { return d }
-}
 
 const statusLabels: Record<string, string> = {
   pending: 'Pendente', in_progress: 'Em curso', completed: 'Concluído', cancelled: 'Cancelado',
+}
+
+// ── Photo loading — fetch each image once, read its real dimensions, and
+// hand react-pdf the raw bytes directly (no distortion, no forced square crop). ──
+interface LoadedPhoto {
+  key: string
+  ok: true
+  data: Buffer
+  format: 'jpg' | 'png'
+  aspectRatio: number
+}
+interface FailedPhoto {
+  key: string
+  ok: false
+  url: string
+}
+
+async function loadPhoto(url: string, key: string): Promise<LoadedPhoto | FailedPhoto> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const arrayBuffer = await res.arrayBuffer()
+    const bytes = new Uint8Array(arrayBuffer)
+    const dim = imageSize(bytes)
+    const format = dim.type === 'png' ? 'png' : dim.type === 'jpg' || dim.type === 'jpeg' ? 'jpg' : null
+    if (!format || !dim.width || !dim.height) throw new Error(`Unsupported format: ${dim.type}`)
+    return { key, ok: true, data: Buffer.from(bytes), format, aspectRatio: dim.width / dim.height }
+  } catch (err) {
+    console.warn('[PDF] failed to load photo for sizing, falling back to URL:', url, err)
+    return { key, ok: false, url }
+  }
+}
+
+// Renders photos in a "justified gallery" style: fixed row height, width
+// proportional to each photo's real aspect ratio — landscape shots come out
+// wide, portrait shots come out narrow and tall, nothing gets squashed.
+function PhotoMosaic({ photos, rowHeight = 130, maxWidth = 260 }: { photos: (LoadedPhoto | FailedPhoto)[]; rowHeight?: number; maxWidth?: number }) {
+  return (
+    <View style={s.photoGrid}>
+      {photos.map(p => {
+        if (p.ok) {
+          const width = Math.min(maxWidth, rowHeight * p.aspectRatio)
+          const height = width / p.aspectRatio
+          return (
+            <View key={p.key} style={[s.photoWrap, { width, height }]}>
+              <Image src={{ data: p.data, format: p.format }} style={{ width, height }} />
+            </View>
+          )
+        }
+        // Fallback: still show the photo, just without a known aspect ratio
+        return (
+          <View key={p.key} style={[s.photoWrap, { width: rowHeight * 1.3, height: rowHeight }]}>
+            <Image src={p.url} style={{ width: rowHeight * 1.3, height: rowHeight, objectFit: 'cover' }} />
+          </View>
+        )
+      })}
+    </View>
+  )
 }
 
 function PageFooter({ jobTitle, clientName }: { jobTitle: string; clientName: string }) {
@@ -87,16 +154,24 @@ function PageFooter({ jobTitle, clientName }: { jobTitle: string; clientName: st
   )
 }
 
-function ReportPageHeader({ jobTitle, clientName }: { jobTitle: string; clientName: string }) {
+function ReportPageHeader({ jobTitle, clientName, accent }: { jobTitle: string; clientName: string; accent: string }) {
   return (
-    <View style={s.pageHeader}>
-      <View style={s.pageHeaderLeft}>
-        <Text style={s.pageHeaderTitle}>{jobTitle}</Text>
-        {clientName && <Text style={s.pageHeaderSub}>{clientName}</Text>}
+    <>
+      <View style={[s.accentStrip, { backgroundColor: accent }]} fixed />
+      <View style={s.pageHeader}>
+        <View style={s.pageHeaderLeft}>
+          <Text style={s.pageHeaderTitle}>{jobTitle}</Text>
+          {clientName && <Text style={s.pageHeaderSub}>{clientName}</Text>}
+        </View>
+        <Text style={s.pageHeaderLogo}>GestObra</Text>
       </View>
-      <Text style={s.pageHeaderLogo}>GestObra</Text>
-    </View>
+    </>
   )
+}
+
+function SectionTag({ type }: { type: keyof typeof TYPE_STYLE }) {
+  const t = TYPE_STYLE[type]
+  return <Text style={[s.sectionTag, { color: t.accent, backgroundColor: t.soft }]}>{t.label}</Text>
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
@@ -151,6 +226,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     ...(dailyReports ?? []).map((r: any) => r.report_date),
     ...(jobReports ?? []).map((r: any) => r.report_date),
   ].sort()
+
+  // Preload every photo referenced anywhere in the report, in parallel, so
+  // we know each one's true aspect ratio before laying out the PDF.
+  const allMedia: { id: string; public_url: string; caption: string | null }[] = [
+    ...(startReport?.media ?? []),
+    ...(dailyReports ?? []).flatMap((r: any) => r.media ?? []),
+    ...(finishReport?.media ?? []),
+  ]
+  const loadedById = new Map<string, LoadedPhoto | FailedPhoto>(
+    (await Promise.all(allMedia.map(m => loadPhoto(m.public_url, m.id)))).map(p => [p.key, p])
+  )
+  function photosFor(media: { id: string; public_url: string }[] | undefined): (LoadedPhoto | FailedPhoto)[] {
+    if (!media) return []
+    return media.map(m => loadedById.get(m.id) ?? { key: m.id, ok: false, url: m.public_url })
+  }
 
   let pdf: Buffer
   try {
@@ -232,8 +322,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         {/* ── Ficha de Início ──────────────────────────────────── */}
         {startReport && (
           <Page size="A4" style={s.page}>
-            <ReportPageHeader jobTitle={job.title} clientName={clientName} />
-            <Text style={s.sectionTag}>FICHA DE INÍCIO</Text>
+            <ReportPageHeader jobTitle={job.title} clientName={clientName} accent={TYPE_STYLE.start.accent} />
+            <SectionTag type="start" />
             <Text style={s.sectionHeading}>{formatDate(startReport.report_date)}</Text>
 
             {startReport.description && (
@@ -282,11 +372,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               <>
                 <View style={s.divider} />
                 <Text style={{ fontSize: 9, color: GRAY3, marginBottom: 4 }}>Fotografias ({startReport.media.length})</Text>
-                <View style={s.photoGrid}>
-                  {startReport.media.map((m: any, i: number) => (
-                    <Image key={i} src={m.public_url} style={s.photo} />
-                  ))}
-                </View>
+                <PhotoMosaic photos={photosFor(startReport.media)} />
               </>
             )}
 
@@ -299,10 +385,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           const workerName = workerMap[report.worker_id] ?? null
           return (
             <Page key={report.id} size="A4" style={s.page}>
-              <ReportPageHeader jobTitle={job.title} clientName={clientName} />
-              <Text style={s.sectionTag}>FICHA DIÁRIA {idx + 1} / {(dailyReports ?? []).length}</Text>
+              <ReportPageHeader jobTitle={job.title} clientName={clientName} accent={TYPE_STYLE.daily.accent} />
+              <SectionTag type="daily" />
+              <Text style={{ fontSize: 8, fontWeight: 'bold', color: GRAY3, marginBottom: -6 }}>{idx + 1} / {(dailyReports ?? []).length}</Text>
 
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, marginTop: 10 }}>
                 <View>
                   <Text style={s.sectionHeading}>{formatDate(report.report_date)}</Text>
                   {workerName && <Text style={{ fontSize: 9, color: GRAY3, marginTop: -10, marginBottom: 14 }}>Por {workerName}</Text>}
@@ -345,11 +432,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 <>
                   <View style={s.divider} />
                   <Text style={{ fontSize: 9, color: GRAY3, marginBottom: 4 }}>Fotografias ({report.media.length})</Text>
-                  <View style={s.photoGrid}>
-                    {report.media.map((m: any, i: number) => (
-                      <Image key={i} src={m.public_url} style={s.photo} />
-                    ))}
-                  </View>
+                  <PhotoMosaic photos={photosFor(report.media)} />
                 </>
               )}
 
@@ -361,8 +444,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         {/* ── Ficha de Fim ─────────────────────────────────────── */}
         {finishReport && (
           <Page size="A4" style={s.page}>
-            <ReportPageHeader jobTitle={job.title} clientName={clientName} />
-            <Text style={s.sectionTag}>FICHA DE FIM</Text>
+            <ReportPageHeader jobTitle={job.title} clientName={clientName} accent={TYPE_STYLE.finish.accent} />
+            <SectionTag type="finish" />
             <Text style={s.sectionHeading}>{formatDate(finishReport.report_date)}</Text>
 
             {finishReport.description && (
@@ -411,11 +494,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               <>
                 <View style={s.divider} />
                 <Text style={{ fontSize: 9, color: GRAY3, marginBottom: 4 }}>Fotografias ({finishReport.media.length})</Text>
-                <View style={s.photoGrid}>
-                  {finishReport.media.map((m: any, i: number) => (
-                    <Image key={i} src={m.public_url} style={s.photo} />
-                  ))}
-                </View>
+                <PhotoMosaic photos={photosFor(finishReport.media)} />
               </>
             )}
 
