@@ -17,7 +17,7 @@
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { addDays, format, startOfWeek } from 'date-fns'
+import { addDays, differenceInCalendarDays, format, startOfWeek } from 'date-fns'
 import { pt as ptPT } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Eyebrow, StatusDot, type JobStatus } from '@/components/shared/status'
@@ -242,8 +242,8 @@ export function ScheduleView({ workers, jobs }: ScheduleViewProps) {
                     const jEnd      = addDays(jStart, duration - 1)
 
                     // Which columns does the job touch in the current week?
-                    const colStart = Math.max(0, Math.round((jStart.getTime() - weekStart.getTime()) / 86400000))
-                    const colEnd   = Math.min(6, Math.round((jEnd.getTime()   - weekStart.getTime()) / 86400000))
+                    const colStart = Math.max(0, differenceInCalendarDays(jStart, weekStart))
+                    const colEnd   = Math.min(6, differenceInCalendarDays(jEnd, weekStart))
 
                     // Start time only applies on the first visible day; end time on the last.
                     const startsThisWeek = colStart >= 0 && j.scheduled_date >= format(weekStart, 'yyyy-MM-dd')
